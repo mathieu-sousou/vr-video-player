@@ -65,6 +65,10 @@
 #include <thread>
 #include <mutex>
 
+#ifndef _countof
+#define _countof(x) (sizeof(x)/sizeof((x)[0]))
+#endif
+
 static bool g_bPrintf = true;
 
 enum class ViewMode {
