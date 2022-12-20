@@ -495,6 +495,8 @@ CMainApplication::CMainApplication( int argc, char *argv[] )
 	bool cursor_scale_set = false;
 	bool cursor_wrap_set = false;
 
+	memset(&window_texture, 0, sizeof(window_texture));
+
 	for(int i = 1; i < argc; ++i) {
         if(strcmp(argv[i], "--sphere") == 0) {
 			if(projection_arg) {
