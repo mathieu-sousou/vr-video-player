@@ -725,6 +725,8 @@ static void grabkeys(Display *display) {
             XGrabKey(display, XKeysymToKeycode(display, keys[j]), Mod1Mask|modifiers[i], root_window, False, GrabModeAsync, GrabModeAsync);
         }
     }
+
+    XSync(display, False);
 }
 
 
