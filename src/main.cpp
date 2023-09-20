@@ -64,6 +64,7 @@
 
 #include <thread>
 #include <mutex>
+#include <condition_variable>
 
 #ifndef _countof
 #define _countof(x) (sizeof(x)/sizeof((x)[0]))
@@ -84,6 +85,88 @@ enum class ProjectionMode {
 	CYLINDER, /* aka plane */
 	SPHERE360
 };
+#define BUFFER_DEPTH 2
+class VideoBuffers
+{
+public:
+	VideoBuffers(int nWidth, int nHeight);
+	~VideoBuffers();
+	
+	
+	GLuint get_renderTextureId();
+	GLuint get_renderFramebufferId();
+	GLuint get_showTextureId();
+	GLuint get_showFramebufferId();
+	
+	void swap_buffer();
+	
+	std::mutex swap_mutex;
+private:
+	unsigned int current_show_frame = 0;
+	
+	GLuint texture_id[BUFFER_DEPTH];
+	GLuint frame_buffer_id[BUFFER_DEPTH];
+};
+
+VideoBuffers::VideoBuffers(int nWidth, int nHeight)
+{
+	for(int i = 0; i < BUFFER_DEPTH; i++)
+	{
+		glGenFramebuffers(1, &frame_buffer_id[i]);
+		glBindFramebuffer(GL_FRAMEBUFFER, frame_buffer_id[i]);
+
+		glGenTextures(1, &texture_id[i]);
+		glBindTexture(GL_TEXTURE_2D, texture_id[i]);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, 0);
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, nWidth, nHeight, 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
+		glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, texture_id[i], 0);
+	}
+
+	// check FBO status
+	GLenum status = glCheckFramebufferStatus(GL_FRAMEBUFFER);
+	if (status != GL_FRAMEBUFFER_COMPLETE)
+	{
+		throw std::runtime_error("Error: Failed to create video textures and buffers.");
+	}
+
+	glBindFramebuffer( GL_FRAMEBUFFER, 0 );
+}
+
+VideoBuffers::~VideoBuffers()
+{
+	for(int i = 0; i < BUFFER_DEPTH; i++)
+	{
+		glDeleteTextures(1, &texture_id[i]);
+		glDeleteFramebuffers(1, &frame_buffer_id[i]);
+	}
+}
+	
+GLuint VideoBuffers::get_renderTextureId()
+{
+	return texture_id[(current_show_frame + 1) % BUFFER_DEPTH];
+}
+
+GLuint VideoBuffers::get_renderFramebufferId()
+{
+	return frame_buffer_id[(current_show_frame + 1) % BUFFER_DEPTH];
+}
+
+GLuint VideoBuffers::get_showTextureId()
+{
+	return texture_id[current_show_frame];
+}
+
+GLuint VideoBuffers::get_showFramebufferId()
+{
+	return frame_buffer_id[current_show_frame];
+}
+
+void VideoBuffers::swap_buffer()
+{
+	std::lock_guard<std::mutex> lock(swap_mutex);
+	current_show_frame = (current_show_frame + 1) % BUFFER_DEPTH;
+}
 
 //-----------------------------------------------------------------------------
 // Purpose:
@@ -237,7 +320,8 @@ private: // OpenGL bookkeeping
 	FramebufferDesc leftEyeDesc;
 	FramebufferDesc rightEyeDesc;
 
-	FramebufferDesc mpvDesc;
+	//FramebufferDesc mpvDesc;
+	VideoBuffers* mpvBuffers = nullptr;
 
 	bool CreateFrameBuffer( int nWidth, int nHeight, FramebufferDesc &framebufferDesc );
 	void set_current_context(SDL_GLContext context);
@@ -261,6 +345,7 @@ private: // X compositor
 	const char *mpv_file = nullptr;
 	Mpv mpv;
 	std::mutex mpv_render_update_mutex;
+	std::condition_variable mpv_render_update_condition;
 	bool mpv_render_update = false;
 	int64_t mpv_video_width = 0;
 	int64_t mpv_video_height = 0;
@@ -883,32 +968,44 @@ bool CMainApplication::BInit()
 
 			mpv.load_file(mpv_file);
 			set_current_context(NULL);
+			
 
 			while(running) {
-				set_current_context(m_pMpvContext);
-
+				
 				if(mpv_video_loaded && !mpv_loaded_in_thread) {
+					set_current_context(m_pMpvContext);
 					mpv_loaded_in_thread = true;
 					// TODO: Do not create depth buffer and extra framebuffers
-					CreateFrameBuffer(mpv_video_width, mpv_video_height, mpvDesc);
+					//CreateFrameBuffer(mpv_video_width, mpv_video_height, mpvDesc);
+					mpvBuffers = new VideoBuffers(mpv_video_width, mpv_video_height);
+					set_current_context(NULL);
 				}
 
 				if(mpv_video_loaded) {
-					glBindFramebuffer( GL_FRAMEBUFFER, mpvDesc.m_nRenderFramebufferId );
-					glViewport(0, 0, mpv_video_width, mpv_video_height);
 					if(take_render_update()) {
+						set_current_context(m_pMpvContext);
+						mpvBuffers->swap_buffer();
+						GLuint current_frame_buffer_id = mpvBuffers->get_renderFramebufferId();
+						
+						//glBindFramebuffer( GL_FRAMEBUFFER, mpvDesc.m_nRenderFramebufferId );
+						glBindFramebuffer( GL_FRAMEBUFFER, current_frame_buffer_id );
+						glViewport(0, 0, mpv_video_width, mpv_video_height);
+
 						glDisable(GL_DEPTH_TEST);
 
 						glBindVertexArray( m_unCompanionWindowVAO );
 						glUseProgram( m_unCompanionWindowProgramID );
 
-						mpv.draw(mpvDesc.m_nRenderFramebufferId, mpv_video_width, mpv_video_height);
+						//mpv.draw(mpvDesc.m_nRenderFramebufferId, mpv_video_width, mpv_video_height);
+						mpv.draw(current_frame_buffer_id, mpv_video_width, mpv_video_height);
 
 						glBindVertexArray( 0 );
 						glUseProgram( 0 );
+						glBindFramebuffer( GL_FRAMEBUFFER, 0 );
+						
+						set_current_context(NULL);
 					}
-					glBindFramebuffer( GL_FRAMEBUFFER, 0 );
-					
+/*					
 					glDisable( GL_MULTISAMPLE );
 
 					glBindFramebuffer(GL_READ_FRAMEBUFFER, mpvDesc.m_nRenderFramebufferId );
@@ -920,14 +1017,14 @@ bool CMainApplication::BInit()
 
 					glBindFramebuffer(GL_READ_FRAMEBUFFER, 0);
 					glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0 );
+					
 
-					glEnable( GL_MULTISAMPLE );
+					glEnable( GL_MULTISAMPLE );*/
 				} else {
 					usleep(1000);
 				}
-
-				set_current_context(NULL);
 			}
+			delete mpvBuffers;
 		});
 	}
 
@@ -1078,12 +1175,12 @@ void CMainApplication::Shutdown()
 		glDeleteFramebuffers( 1, &rightEyeDesc.m_nRenderFramebufferId );
 		glDeleteTextures( 1, &rightEyeDesc.m_nResolveTextureId );
 		glDeleteFramebuffers( 1, &rightEyeDesc.m_nResolveFramebufferId );
-
+	/*
 		glDeleteRenderbuffers( 1, &mpvDesc.m_nDepthBufferId );
 		glDeleteTextures( 1, &mpvDesc.m_nRenderTextureId );
 		glDeleteFramebuffers( 1, &mpvDesc.m_nRenderFramebufferId );
 		glDeleteTextures( 1, &mpvDesc.m_nResolveTextureId );
-		glDeleteFramebuffers( 1, &mpvDesc.m_nResolveFramebufferId );
+		glDeleteFramebuffers( 1, &mpvDesc.m_nResolveFramebufferId );*/
 
 		if( m_unCompanionWindowVAO != 0 )
 		{
@@ -1415,6 +1512,11 @@ void CMainApplication::ProcessVREvent( const vr::VREvent_t & event )
 //-----------------------------------------------------------------------------
 void CMainApplication::RenderFrame()
 {
+	if(mpvBuffers != nullptr)
+	{
+		mpvBuffers->swap_mutex.lock();
+	}
+
 	// for now as fast as possible
 	if ( m_pHMD )
 	{
@@ -1454,6 +1556,11 @@ void CMainApplication::RenderFrame()
 	{
 		glFlush();
 		glFinish();
+	}
+
+	if(mpvBuffers != nullptr)
+	{
+		mpvBuffers->swap_mutex.unlock();
 	}
 
 	// Spew out the controller and pose count whenever they change.
@@ -2252,15 +2359,19 @@ void CMainApplication::set_current_context(SDL_GLContext context) {
 }
 
 bool CMainApplication::take_render_update() {
-	std::lock_guard<std::mutex> lock(mpv_render_update_mutex);
-	bool should_update = mpv_render_update;
+	std::unique_lock<std::mutex> lock(mpv_render_update_mutex);
+	while(!mpv_render_update)
+	{
+		mpv_render_update_condition.wait(lock);
+	}
 	mpv_render_update = false;
-	return should_update;
+	return true;
 }
 
 void CMainApplication::set_render_update() {
 	std::lock_guard<std::mutex> lock(mpv_render_update_mutex);
 	mpv_render_update = true;
+	mpv_render_update_condition.notify_one();
 }
 
 
@@ -2338,6 +2449,7 @@ void CMainApplication::SetupCompanionWindow()
 //-----------------------------------------------------------------------------
 void CMainApplication::RenderStereoTargets()
 {
+
 	glClearColor( 0.0f, 0.0f, 0.0f, 1.0f );
 	glEnable( GL_MULTISAMPLE );
 
@@ -2358,7 +2470,7 @@ void CMainApplication::RenderStereoTargets()
 
  	glBindFramebuffer(GL_READ_FRAMEBUFFER, 0);
     glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0 );	
-
+	
 	glEnable( GL_MULTISAMPLE );
 
 	// Right Eye
@@ -2456,7 +2568,18 @@ void CMainApplication::RenderScene( vr::Hmd_Eye nEye )
 
 	glBindVertexArray( m_unSceneVAO );
 	glActiveTexture(GL_TEXTURE0);
-	glBindTexture(GL_TEXTURE_2D, mpv_file ? mpvDesc.m_nResolveTextureId :  window_texture_get_opengl_texture_id(&window_texture));
+	if(mpv_file)
+	{
+		if(mpvBuffers != nullptr)
+		{
+			glBindTexture(GL_TEXTURE_2D, mpvBuffers->get_showTextureId());
+		}
+	}
+	else
+	{
+		glBindTexture(GL_TEXTURE_2D, window_texture_get_opengl_texture_id(&window_texture));
+	}
+	//glBindTexture(GL_TEXTURE_2D, mpv_file ? mpvDesc.m_nRenderTextureId :  window_texture_get_opengl_texture_id(&window_texture));
 	glActiveTexture(GL_TEXTURE1);
 	glBindTexture(GL_TEXTURE_2D, mpv_file ? 0 : arrow_image_texture_id);
 	glDrawArrays( GL_TRIANGLES, 0, m_uiVertcount );
