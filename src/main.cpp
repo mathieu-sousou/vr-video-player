@@ -2564,14 +2564,14 @@ void CMainApplication::RenderScene( vr::Hmd_Eye nEye )
 	m[0] += (-cursor_offset_x * arrow_drawn_scale_x) / (float)window_width;
 	m[1] += (-cursor_offset_y * arrow_drawn_scale_y) / (float)window_height;
 
-	glUniform2fv(m_nCursorLocation, 1, &m[0]);
-
 	glBindVertexArray( m_unSceneVAO );
 	glActiveTexture(GL_TEXTURE0);
 	if(mpv_file)
 	{
 		if(mpvBuffers != nullptr)
 		{
+			m[0] = -1.0f;
+			m[1] = -1.0f;
 			glBindTexture(GL_TEXTURE_2D, mpvBuffers->get_showTextureId());
 		}
 	}
@@ -2579,6 +2579,7 @@ void CMainApplication::RenderScene( vr::Hmd_Eye nEye )
 	{
 		glBindTexture(GL_TEXTURE_2D, window_texture_get_opengl_texture_id(&window_texture));
 	}
+	glUniform2fv(m_nCursorLocation, 1, &m[0]);
 	//glBindTexture(GL_TEXTURE_2D, mpv_file ? mpvDesc.m_nRenderTextureId :  window_texture_get_opengl_texture_id(&window_texture));
 	glActiveTexture(GL_TEXTURE1);
 	glBindTexture(GL_TEXTURE_2D, mpv_file ? 0 : arrow_image_texture_id);
