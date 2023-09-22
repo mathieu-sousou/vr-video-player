@@ -102,7 +102,7 @@ bool Mpv::create(bool use_system_mpv_config) {
         { MPV_RENDER_PARAM_INVALID, 0 }
     };
 
-    mpv_set_option_string(mpv, "vd-lavc-dr", "yes");
+    //mpv_set_option_string(mpv, "vd-lavc-dr", "yes");
     mpv_set_option_string(mpv, "vo", "libmpv");
     mpv_set_option_string(mpv, "hwdec", "auto");
     mpv_set_option_string(mpv, "profile", "gpu-hq");
