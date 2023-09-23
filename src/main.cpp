@@ -2759,7 +2759,7 @@ CMainApplication *pMainApplication;
 
 void reset_position(int signum)
 {
-	printf("ok\n");
+	write(STDOUT_FILENO, "ok\n", 3);
 	if(pMainApplication)
 		pMainApplication->ResetRotation();
 }
