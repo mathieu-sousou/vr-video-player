@@ -223,6 +223,7 @@ public:
 
 	int exit_code = 0;
 	bool bQuit = false;
+	bool bQuitSignal = false;
 private: 
 	bool m_bDebugOpenGL;
 	bool m_bVblank;
@@ -983,6 +984,9 @@ bool CMainApplication::BInit()
 
 				if(mpv_video_loaded) {
 					if(take_render_update()) {
+						if(!running)
+							break;
+
 						set_current_context(m_pMpvContext);
 						mpvBuffers->swap_buffer();
 						GLuint current_frame_buffer_id = mpvBuffers->get_renderFramebufferId();
@@ -1467,8 +1471,14 @@ void CMainApplication::RunMainLoop()
 	{
 		set_current_context(m_pContext);
 		bQuit = HandleInput();
-		if(bQuit)
+
+		if(bQuitSignal)
+			bQuit = true;
+
+		if(bQuit) {
 			running = false;
+			set_render_update();
+		}
 
 		RenderFrame();
 		set_current_context(NULL);
@@ -2360,7 +2370,7 @@ void CMainApplication::set_current_context(SDL_GLContext context) {
 
 bool CMainApplication::take_render_update() {
 	std::unique_lock<std::mutex> lock(mpv_render_update_mutex);
-	while(!mpv_render_update)
+	while(!mpv_render_update && running)
 	{
 		mpv_render_update_condition.wait(lock);
 	}
@@ -2766,7 +2776,7 @@ void reset_position(int signum)
 
 void quit(int signum) {
 	if(pMainApplication)
-		pMainApplication->bQuit = true;
+		pMainApplication->bQuitSignal = true;
 }
 
 //-----------------------------------------------------------------------------
