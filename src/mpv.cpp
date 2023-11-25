@@ -64,7 +64,7 @@ Mpv::~Mpv() {
     destroy();
 }
 
-bool Mpv::create(bool use_system_mpv_config) {
+bool Mpv::create(bool use_system_mpv_config, const char *profile) {
     if(created)
         return false;
 
@@ -103,10 +103,11 @@ bool Mpv::create(bool use_system_mpv_config) {
     };
 
     //mpv_set_option_string(mpv, "vd-lavc-dr", "yes");
-    mpv_set_option_string(mpv, "vo", "libmpv");
     mpv_set_option_string(mpv, "hwdec", "auto");
-    mpv_set_option_string(mpv, "profile", "gpu-hq");
+    mpv_set_option_string(mpv, "profile", profile);
     mpv_set_option_string(mpv, "gpu-api", "opengl");
+    // This has to be set after mpv_set_option_string(... "profile") since that option overwrites this
+    mpv_set_option_string(mpv, "vo", "libmpv");
 
     if(mpv_render_context_create(&mpv_gl, mpv, params) < 0) {
         fprintf(stderr, "Error: mpv_render_context_create failed\n");

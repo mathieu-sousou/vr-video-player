@@ -11,7 +11,7 @@ public:
     Mpv() = default;
     ~Mpv();
 
-    bool create(bool use_system_mpv_config);
+    bool create(bool use_system_mpv_config, const char *profile = "gpu-hq");
     bool destroy();
 
     bool load_file(const char *path);

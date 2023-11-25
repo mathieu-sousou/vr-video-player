@@ -344,6 +344,7 @@ private: // X compositor
 	bool focused_window_changed = true;
 	bool focused_window_set = false;
 	const char *mpv_file = nullptr;
+	const char *mpv_profile = "gpu-hq";
 	Mpv mpv;
 	std::mutex mpv_render_update_mutex;
 	std::condition_variable mpv_render_update_condition;
@@ -484,7 +485,7 @@ void dprintf( const char *fmt, ... )
 }
 
 static void usage() {
-	fprintf(stderr, "usage: vr-video-player [--sphere|--sphere360|--flat|--plane] [--left-right|--right-left] [--stretch|--no-stretch] [--zoom zoom-level] [--cursor-scale scale] [--cursor-wrap|--no-cursor-wrap] [--follow-focused|--video video|<window_id>] [--use-system-mpv-config] [--free-camera] [--reduce-flicker]\n");
+	fprintf(stderr, "usage: vr-video-player [--sphere|--sphere360|--flat|--plane] [--left-right|--right-left] [--stretch|--no-stretch] [--zoom zoom-level] [--cursor-scale scale] [--cursor-wrap|--no-cursor-wrap] [--follow-focused|--video video|<window_id>] [--use-system-mpv-config] [--mpv-profile <profile>] [--free-camera] [--reduce-flicker]\n");
     fprintf(stderr, "\n");
 	fprintf(stderr, "OPTIONS\n");
     fprintf(stderr, "  --sphere                  View the window as a stereoscopic 180 degrees screen (half sphere). The view will be attached to your head in vr. This is recommended for 180 degrees videos. This is the default value\n");
@@ -504,6 +505,7 @@ static void usage() {
     fprintf(stderr, "  --follow-focused          If this option is set, then the selected window will be the focused window. vr-video-player will automatically update when the focused window changes. Either this option, --video or window_id should be used\n");
 	fprintf(stderr, "  --video <video>           Select the video to play (using mpv). Either this option, --follow-focused or window_id should be used\n");
 	fprintf(stderr, "  --use-system-mpv-config   Use system (~/.config/mpv/mpv.conf) mpv config. Disabled by default\n");
+	fprintf(stderr, "  --mpv-profile <profile>   Which mpv profile to use. Only applicable when using --video option. Optional, defaults to \"gpu-hq\"\n");
     fprintf(stderr, "  window_id                 The X11 window id of the window to view in vr. Either this option, --follow-focused or --video should be used\n");
     fprintf(stderr, "\n");
     fprintf(stderr, "EXAMPLES\n");
@@ -679,6 +681,9 @@ CMainApplication::CMainApplication( int argc, char *argv[] )
 			++i;
 		} else if(strcmp(argv[i], "--use-system-mpv-config") == 0) {
 			use_system_mpv_config = true;
+		} else if(strcmp(argv[i], "--mpv-profile") == 0 && i < argc - 1) {
+			mpv_profile = argv[i + 1];
+			++i;
 		} else if(strcmp(argv[i], "--free-camera") == 0) {
 			free_camera = true;
 		} else if(strcmp(argv[i], "--reduce-flicker") == 0) {
@@ -964,12 +969,11 @@ bool CMainApplication::BInit()
 	if(mpv_file) {
 		mpv_thread = std::thread([&]{
 			set_current_context(m_pMpvContext);
-			if(!mpv.create(use_system_mpv_config))
+			if(!mpv.create(use_system_mpv_config, mpv_profile))
 				return;
 
 			mpv.load_file(mpv_file);
 			set_current_context(NULL);
-			
 
 			while(running) {
 				
