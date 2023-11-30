@@ -415,6 +415,7 @@ private: // X compositor
         vr::VROverlayHandle_t thumbnail_handle = vr::k_ulOverlayHandleInvalid;
         VideoBuffers *overlay_buffers = nullptr;
         GLuint m_unOverlayProgramID = 0;
+        const char *overlay_key = "vr-video-player";
 };
 
 
@@ -709,7 +710,10 @@ CMainApplication::CMainApplication( int argc, char *argv[] )
 			reduce_flicker = true;
 		} else if(strcmp(argv[i], "--overlay") == 0) {
 			overlay_mode = true;
-		}
+		} else if(strcmp(argv[i], "--overlay-key") == 0 && i < argc - 1) {
+                         overlay_key = argv[i + 1];
+                         ++i;
+                }
                 else if(argv[i][0] == '-') {
 			fprintf(stderr, "Invalid flag: %s\n", argv[i]);
 			usage();
@@ -1179,7 +1183,7 @@ bool CMainApplication::BInitOverlay()
 	}
 
         vr::VROverlay()->CreateDashboardOverlay(
-                "vr-video-player",
+                overlay_key,
                 "vr-video-player",
                 &overlay_handle,
                 &thumbnail_handle
