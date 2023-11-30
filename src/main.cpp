@@ -49,6 +49,8 @@
 #include <X11/Xlib.h>
 #include <X11/extensions/Xfixes.h>
 
+#include <xdo.h>
+
 #include <stdio.h>
 #include <string>
 #include <cstdlib>
@@ -416,6 +418,7 @@ private: // X compositor
         VideoBuffers *overlay_buffers = nullptr;
         GLuint m_unOverlayProgramID = 0;
         const char *overlay_key = "vr-video-player";
+        xdo_t *overlay_xdo = nullptr;
 };
 
 
@@ -1201,6 +1204,8 @@ bool CMainApplication::BInitOverlay()
 
         vr::VROverlay()->SetOverlayFromFile( thumbnail_handle, "frog.png");
 
+        overlay_xdo = xdo_new_with_opened_display(x_display, nullptr, 0);
+
 	return true;
 }
 
@@ -1279,6 +1284,9 @@ void CMainApplication::Shutdown()
 	}
 
 	SDL_Quit();
+
+        if (overlay_xdo)
+                xdo_free(overlay_xdo);
 
 	if (x_display)
 		XCloseDisplay(x_display);
@@ -1614,6 +1622,16 @@ void CMainApplication::ProcessVREvent( const vr::VREvent_t & event )
         case vr::VREvent_OverlayClosed:
                 {
                         bQuitSignal = true;
+                }
+                break;
+
+        case vr::VREvent_KeyboardCharInput:
+                if (overlay_xdo && src_window_id != None) {
+                        char text[sizeof(event.data.keyboard.cNewInput) + 1] = {0};
+                        memcpy(text, event.data.keyboard.cNewInput,
+                               sizeof(event.data.keyboard.cNewInput));
+                        xdo_enter_text_window(overlay_xdo, src_window_id, text,
+                                              12 * 1000);
                 }
                 break;
 	}
