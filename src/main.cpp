@@ -1649,6 +1649,20 @@ void CMainApplication::ProcessVREvent( const vr::VREvent_t & event )
                         );
                 }
                 break;
+
+        case vr::VREvent_MouseButtonUp:
+                if (overlay_xdo && src_window_id != None) {
+                        xdo_mouse_up(overlay_xdo, src_window_id,
+                                     event.data.mouse.button);
+                }
+                break;
+
+        case vr::VREvent_MouseButtonDown:
+                if (overlay_xdo && src_window_id != None) {
+                        xdo_mouse_down(overlay_xdo, src_window_id,
+                                       event.data.mouse.button);
+                }
+                break;
 	}
 }
 
