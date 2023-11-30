@@ -1475,6 +1475,11 @@ bool CMainApplication::HandleInput()
 		window_resize_time = SDL_GetTicks();
 		window_resized = false;
 
+                if (overlay_mode) {
+                        vr::HmdVector2_t scale = {(float)window_width, (float)window_height};
+                        vr::VROverlay()->SetOverlayMouseScale(overlay_handle, &scale);
+                }
+
 		if(focused_window_changed) {
 			XSelectInput(x_display, src_window_id, StructureNotifyMask|VisibilityChangeMask|KeyPressMask|KeyReleaseMask);
 			XFixesSelectCursorInput(x_display, src_window_id, XFixesDisplayCursorNotifyMask);
@@ -1632,6 +1637,16 @@ void CMainApplication::ProcessVREvent( const vr::VREvent_t & event )
                                sizeof(event.data.keyboard.cNewInput));
                         xdo_enter_text_window(overlay_xdo, src_window_id, text,
                                               12 * 1000);
+                }
+                break;
+
+        case vr::VREvent_MouseMove:
+                if (overlay_xdo && src_window_id != None) {
+                        xdo_move_mouse_relative_to_window(
+                                overlay_xdo, src_window_id,
+                                event.data.mouse.x,
+                                event.data.mouse.y
+                        );
                 }
                 break;
 	}
