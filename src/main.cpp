@@ -70,6 +70,18 @@
 #define _countof(x) (sizeof(x)/sizeof((x)[0]))
 #endif
 
+// Not in public headers yet.
+namespace vr
+{
+    const VROverlayFlags VROverlayFlags_EnableControlBar = (VROverlayFlags)(1 << 23);
+    const VROverlayFlags VROverlayFlags_EnableControlBarKeyboard = (VROverlayFlags)(1 << 24);
+    const VROverlayFlags VROverlayFlags_EnableControlBarClose = (VROverlayFlags)(1 << 25);
+    const VROverlayFlags VROverlayFlags_EnableControlBarSteamUI = (VROverlayFlags)(1 << 26);
+
+    const EVRButtonId k_EButton_Steam = (EVRButtonId)(50);
+    const EVRButtonId k_EButton_QAM = (EVRButtonId)(51);
+}
+
 static bool g_bPrintf = true;
 
 enum class ViewMode {
@@ -180,6 +192,7 @@ public:
 	bool BInit();
 	bool BInitGL();
 	bool BInitCompositor();
+        bool BInitOverlay();
 
 	void Shutdown();
 
@@ -396,6 +409,12 @@ private: // X compositor
 	bool cursor_image_set = false;
 
 	bool config_exists = false;
+
+        bool overlay_mode = false;
+        vr::VROverlayHandle_t overlay_handle = vr::k_ulOverlayHandleInvalid;
+        vr::VROverlayHandle_t thumbnail_handle = vr::k_ulOverlayHandleInvalid;
+        VideoBuffers *overlay_buffers = nullptr;
+        GLuint m_unOverlayProgramID = 0;
 };
 
 
@@ -688,7 +707,10 @@ CMainApplication::CMainApplication( int argc, char *argv[] )
 			free_camera = true;
 		} else if(strcmp(argv[i], "--reduce-flicker") == 0) {
 			reduce_flicker = true;
-		} else if(argv[i][0] == '-') {
+		} else if(strcmp(argv[i], "--overlay") == 0) {
+			overlay_mode = true;
+		}
+                else if(argv[i][0] == '-') {
 			fprintf(stderr, "Invalid flag: %s\n", argv[i]);
 			usage();
 		} else {
@@ -862,7 +884,9 @@ bool CMainApplication::BInit()
 
 	// Loading the SteamVR Runtime
 	vr::EVRInitError eError = vr::VRInitError_None;
-	m_pHMD = vr::VR_Init( &eError, vr::VRApplication_Scene );
+
+        vr::EVRApplicationType appType = overlay_mode ? vr::VRApplication_Overlay : vr::VRApplication_Scene;
+	m_pHMD = vr::VR_Init( &eError, appType );
 
 	if ( eError != vr::VRInitError_None )
 	{
@@ -879,7 +903,11 @@ bool CMainApplication::BInit()
 
 	int nWindowPosX = 700;
 	int nWindowPosY = 100;
-	Uint32 unWindowFlags = SDL_WINDOW_OPENGL | SDL_WINDOW_SHOWN;
+	Uint32 unWindowFlags = SDL_WINDOW_OPENGL;
+        if (!overlay_mode)
+                unWindowFlags |= SDL_WINDOW_SHOWN;
+        else
+                unWindowFlags |= SDL_WINDOW_HIDDEN;
 
 	SDL_GL_SetAttribute( SDL_GL_CONTEXT_MAJOR_VERSION, 3 );
 	SDL_GL_SetAttribute( SDL_GL_CONTEXT_MINOR_VERSION, 2 );
@@ -960,7 +988,13 @@ bool CMainApplication::BInit()
 		return false;
 	}
 
-	if (!BInitCompositor())
+        if (overlay_mode) {
+                if (!BInitOverlay()) {
+                        printf("%s - Failed to initialize VR Overlay!\n", __FUNCTION__);
+                        return false;
+                }
+        }
+        else if (!BInitCompositor())
 	{
 		printf("%s - Failed to initialize VR Compositor!\n", __FUNCTION__);
 		return false;
@@ -1048,9 +1082,11 @@ bool CMainApplication::BInit()
 
 	fprintf(stderr, "Using openvr config file: %s\n", action_manifest_path);
 
-	vr::VRInput()->SetActionManifestPath(action_manifest_path);
-	vr::VRInput()->GetActionHandle( "/actions/demo/in/HideCubes", &m_actionHideCubes );
-	vr::VRInput()->GetActionSetHandle( "/actions/demo", &m_actionsetDemo );
+        if (!overlay_mode) {
+                vr::VRInput()->SetActionManifestPath(action_manifest_path);
+                vr::VRInput()->GetActionHandle( "/actions/demo/in/HideCubes", &m_actionHideCubes );
+                vr::VRInput()->GetActionSetHandle( "/actions/demo", &m_actionsetDemo );
+        }
 
 	return true;
 }
@@ -1130,6 +1166,36 @@ bool CMainApplication::BInitCompositor()
 		printf( "Compositor initialization failed. See log file for details\n" );
 		return false;
 	}
+
+	return true;
+}
+
+bool CMainApplication::BInitOverlay()
+{
+	if ( !vr::VROverlay() )
+	{
+		printf( "Overlay initialization failed. See log file for details\n" );
+		return false;
+	}
+
+        vr::VROverlay()->CreateDashboardOverlay(
+                "vr-video-player",
+                "vr-video-player",
+                &overlay_handle,
+                &thumbnail_handle
+        );
+
+        vr::VROverlay()->SetOverlayInputMethod( overlay_handle, vr::VROverlayInputMethod_Mouse );
+
+        vr::VROverlay()->SetOverlayFlag( overlay_handle, vr::VROverlayFlags_IgnoreTextureAlpha,		true );
+        vr::VROverlay()->SetOverlayFlag( overlay_handle, vr::VROverlayFlags_EnableControlBar,			true );
+        vr::VROverlay()->SetOverlayFlag( overlay_handle, vr::VROverlayFlags_EnableControlBarKeyboard,	true );
+        vr::VROverlay()->SetOverlayFlag( overlay_handle, vr::VROverlayFlags_EnableControlBarClose,	true );
+        vr::VROverlay()->SetOverlayFlag( overlay_handle, vr::VROverlayFlags_WantsModalBehavior,	    false );
+        vr::VROverlay()->SetOverlayFlag( overlay_handle, vr::VROverlayFlags_SendVRSmoothScrollEvents, true );
+        vr::VROverlay()->SetOverlayFlag( overlay_handle, vr::VROverlayFlags_VisibleInDashboard,       true );
+
+        vr::VROverlay()->SetOverlayFromFile( thumbnail_handle, "frog.png");
 
 	return true;
 }
@@ -1416,6 +1482,14 @@ bool CMainApplication::HandleInput()
 			pixmap_texture_width = 1;
 		if(pixmap_texture_height == 0)
 			pixmap_texture_height = 1;
+
+                if (overlay_mode) {
+                        if (overlay_buffers) {
+                                delete overlay_buffers;
+                                overlay_buffers = nullptr;
+                        }
+                        overlay_buffers = new VideoBuffers(pixmap_texture_width, pixmap_texture_height);
+                }
 		glBindTexture(GL_TEXTURE_2D, 0);
 		SetupScene();
 	} else if(!window_resized && zoom_resize) {
@@ -1437,23 +1511,38 @@ bool CMainApplication::HandleInput()
 		ProcessVREvent( event );
 	}
 
-	// Process SteamVR action state
-	// UpdateActionState is called each frame to update the state of the actions themselves. The application
-	// controls which action sets are active with the provided array of VRActiveActionSet_t structs.
-	vr::VRActiveActionSet_t actionSet = { 0 };
-	actionSet.ulActionSet = m_actionsetDemo;
-	vr::VRInput()->UpdateActionState( &actionSet, sizeof(actionSet), 1 );
+        if (overlay_mode) {
+                vr::VREvent_t vrEvent;
+                while( vr::VROverlay()->PollNextOverlayEvent(
+                               overlay_handle, &vrEvent, sizeof( vrEvent ) ) ) {
+                        ProcessVREvent( event );
+                }
+        }
 
-	if(GetDigitalActionState( m_actionHideCubes ) || m_bResetRotation) {
-		printf("reset rotation!\n");
-		//printf("pos, %f, %f, %f\n", m_mat4HMDPose[0][2], m_mat4HMDPose[1][2], m_mat4HMDPose[2][2]);
-		// m_resetPos = m_mat4HMDPose;
-		hmd_pos = current_pos;
-		m_bResetRotation = false;
-		m_reset_rotation = glm::inverse(hmd_rot);
-	}
+        if (!overlay_mode) {
+                // Process SteamVR action state
+                // UpdateActionState is called each frame to update the state of
+                // the actions themselves. The application controls which action
+                // sets are active with the provided array of
+                // VRActiveActionSet_t structs.
+                vr::VRActiveActionSet_t actionSet = {0};
+                actionSet.ulActionSet = m_actionsetDemo;
+                vr::VRInput()->UpdateActionState(&actionSet, sizeof(actionSet),
+                                                 1);
 
-	if(!free_camera)
+                if (GetDigitalActionState(m_actionHideCubes) ||
+                    m_bResetRotation) {
+                        printf("reset rotation!\n");
+                        // printf("pos, %f, %f, %f\n", m_mat4HMDPose[0][2],
+                        // m_mat4HMDPose[1][2], m_mat4HMDPose[2][2]);
+                        //  m_resetPos = m_mat4HMDPose;
+                        hmd_pos = current_pos;
+                        m_bResetRotation = false;
+                        m_reset_rotation = glm::inverse(hmd_rot);
+                }
+        }
+
+        if(!free_camera)
 		hmd_pos = current_pos;
 
 	return bRet;
@@ -1517,6 +1606,12 @@ void CMainApplication::ProcessVREvent( const vr::VREvent_t & event )
 			dprintf( "Device %u updated.\n", event.trackedDeviceIndex );
 		}
 		break;
+
+        case vr::VREvent_OverlayClosed:
+                {
+                        bQuitSignal = true;
+                }
+                break;
 	}
 }
 
@@ -1534,13 +1629,61 @@ void CMainApplication::RenderFrame()
 	// for now as fast as possible
 	if ( m_pHMD )
 	{
-		RenderStereoTargets();
-		RenderCompanionWindow();
+                if (overlay_mode) {
+                        GLuint texture_id = 0;
 
-		vr::Texture_t leftEyeTexture = {(void*)(uintptr_t)leftEyeDesc.m_nResolveTextureId, vr::TextureType_OpenGL, vr::ColorSpace_Gamma };
-		vr::VRCompositor()->Submit(vr::Eye_Left, &leftEyeTexture );
-		vr::Texture_t rightEyeTexture = {(void*)(uintptr_t)rightEyeDesc.m_nResolveTextureId, vr::TextureType_OpenGL, vr::ColorSpace_Gamma };
-		vr::VRCompositor()->Submit(vr::Eye_Right, &rightEyeTexture );
+                        if(mpv_file) {
+                                if(mpvBuffers != nullptr)
+                                {
+                                        texture_id = mpvBuffers->get_showTextureId();
+                                }
+                        }
+                        else if (overlay_buffers) {
+                                // OpenVR relies on a shared OpenGL context
+                                // which does not play well with the GLX
+                                // extension used to copy data from the
+                                // application, so data should be copied to a
+                                // separate texture.
+
+                                overlay_buffers->swap_buffer();
+
+                                GLuint ref_texture = window_texture_get_opengl_texture_id(&window_texture);
+                                texture_id = overlay_buffers->get_showTextureId();
+
+                                glActiveTexture(GL_TEXTURE0);
+                                glBindTexture(GL_TEXTURE_2D, ref_texture);
+                                glBindVertexArray( m_unCompanionWindowVAO );
+                                glUseProgram(m_unOverlayProgramID);
+                                glUniform1i(glGetUniformLocation(m_unOverlayProgramID, "mytexture"), 0);
+
+                                glBindFramebuffer(GL_DRAW_FRAMEBUFFER, overlay_buffers->get_renderFramebufferId());
+
+                                glDisable(GL_DEPTH_TEST);
+                                glDrawBuffer(GL_COLOR_ATTACHMENT0);
+                                glViewport(0, 0, pixmap_texture_width, pixmap_texture_height);
+
+                                glDrawElements( GL_TRIANGLES, m_uiCompanionWindowIndexSize/2, GL_UNSIGNED_SHORT, 0 );
+                                glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
+                        }
+
+                        vr::Texture_t overlay_tex = {(void*)(uintptr_t)texture_id,
+                                vr::TextureType_OpenGL, vr::ColorSpace_Gamma};
+
+                        // Flip OpenGL texture upside down
+                        vr::VRTextureBounds_t bounds = {0, 1, 1, 0};
+
+                        vr::VROverlay()->SetOverlayTexture(overlay_handle, &overlay_tex);
+                        vr::VROverlay()->SetOverlayTextureBounds(overlay_handle, &bounds);
+                }
+                else {
+                        RenderStereoTargets();
+                        RenderCompanionWindow();
+
+                        vr::Texture_t leftEyeTexture = {(void*)(uintptr_t)leftEyeDesc.m_nResolveTextureId, vr::TextureType_OpenGL, vr::ColorSpace_Gamma };
+                        vr::VRCompositor()->Submit(vr::Eye_Left, &leftEyeTexture );
+                        vr::Texture_t rightEyeTexture = {(void*)(uintptr_t)rightEyeDesc.m_nResolveTextureId, vr::TextureType_OpenGL, vr::ColorSpace_Gamma };
+                        vr::VRCompositor()->Submit(vr::Eye_Right, &rightEyeTexture );
+                }
 	}
 
 	if ( m_bVblank && m_bGlFinishHack )
@@ -1553,7 +1696,7 @@ void CMainApplication::RenderFrame()
 	}
 
 	// SwapWindow
-	{
+	if (!overlay_mode) {
 		SDL_GL_SwapWindow( m_pCompanionWindow );
 	}
 
@@ -1586,7 +1729,8 @@ void CMainApplication::RenderFrame()
 		dprintf( "PoseCount:%d(%s) Controllers:%d\n", m_iValidPoseCount, m_strPoseClasses.c_str(), m_iTrackedControllerCount );
 	}
 
-	UpdateHMDMatrixPose();
+        if (!overlay_mode)
+                UpdateHMDMatrixPose();
 }
 
 //-----------------------------------------------------------------------------
@@ -1817,8 +1961,35 @@ bool CMainApplication::CreateAllShaders()
 		"}\n"
 		);
 
+        m_unOverlayProgramID = CompileGLShader(
+		"OverlayProgram",
+
+		// vertex shader
+		"#version 410 core\n"
+		"layout(location = 0) in vec4 position;\n"
+		"layout(location = 1) in vec2 v2UVIn;\n"
+		"noperspective out vec2 v2UV;\n"
+		"void main()\n"
+		"{\n"
+		"	v2UV = vec2(v2UVIn.x, 1.0 - v2UVIn.y);\n"
+		"	gl_Position = vec4(2.0 * position.x + 1.0, position.yzw);\n"
+		"}\n",
+
+		// fragment shader
+		"#version 410 core\n"
+		"uniform sampler2D mytexture;\n"
+		"noperspective in vec2 v2UV;\n"
+		"out vec4 outputColor;\n"
+		"void main()\n"
+		"{\n"
+		"	vec4 col = texture(mytexture, v2UV);\n"
+		"	outputColor = col.rgba;\n"
+		"}\n"
+		);
+
 	return m_unSceneProgramID != 0 
-		&& m_unCompanionWindowProgramID != 0;
+		&& m_unCompanionWindowProgramID != 0 &&
+                m_unOverlayProgramID != 0;
 }
 
 bool CMainApplication::SetCursorFromX11CursorImage(XFixesCursorImage *x11_cursor_image) {
