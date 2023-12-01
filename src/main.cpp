@@ -1219,8 +1219,6 @@ bool CMainApplication::BInitOverlay()
 	if (projection_mode == ProjectionMode::FLAT && stretch)
 		vr::VROverlay()->SetOverlayTexelAspect(overlay_handle, 2.0);
 
-	vr::VROverlay()->SetOverlayFromFile(thumbnail_handle, "frog.png");
-
 	overlay_xdo = xdo_new_with_opened_display(x_display, nullptr, 0);
 
 	overlay_icon_atom = XInternAtom(x_display, "_NET_WM_ICON", 0);
