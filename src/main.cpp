@@ -219,6 +219,7 @@ public:
 	void RenderStereoTargets();
 	void RenderCompanionWindow();
 	void RenderScene( vr::Hmd_Eye nEye );
+	void RenderOverlay();
 
 	void UpdateOverlayTitle();
 	void UpdateOverlayIcon();
@@ -1733,50 +1734,7 @@ void CMainApplication::RenderFrame()
 	if ( m_pHMD )
 	{
 		if (overlay_mode) {
-			GLuint texture_id = 0;
-
-			if(mpv_file) {
-				if(mpvBuffers != nullptr)
-				{
-					texture_id = mpvBuffers->get_showTextureId();
-				}
-			}
-			else if (overlay_buffers) {
-				// OpenVR relies on a shared OpenGL context
-				// which does not play well with the GLX
-				// extension used to copy data from the
-				// application, so data should be copied to a
-				// separate texture.
-
-				overlay_buffers->swap_buffer();
-
-				GLuint ref_texture = window_texture_get_opengl_texture_id(&window_texture);
-				texture_id = overlay_buffers->get_showTextureId();
-
-				glActiveTexture(GL_TEXTURE0);
-				glBindTexture(GL_TEXTURE_2D, ref_texture);
-				glBindVertexArray( m_unCompanionWindowVAO );
-				glUseProgram(m_unOverlayProgramID);
-				glUniform1i(glGetUniformLocation(m_unOverlayProgramID, "mytexture"), 0);
-
-				glBindFramebuffer(GL_DRAW_FRAMEBUFFER, overlay_buffers->get_renderFramebufferId());
-
-				glDisable(GL_DEPTH_TEST);
-				glDrawBuffer(GL_COLOR_ATTACHMENT0);
-				glViewport(0, 0, pixmap_texture_width, pixmap_texture_height);
-
-				glDrawElements( GL_TRIANGLES, m_uiCompanionWindowIndexSize/2, GL_UNSIGNED_SHORT, 0 );
-				glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
-			}
-
-			vr::Texture_t overlay_tex = {(void*)(uintptr_t)texture_id,
-				vr::TextureType_OpenGL, vr::ColorSpace_Gamma};
-
-			// Flip OpenGL texture upside down
-			vr::VRTextureBounds_t bounds = {0, 1, 1, 0};
-
-			vr::VROverlay()->SetOverlayTexture(overlay_handle, &overlay_tex);
-			vr::VROverlay()->SetOverlayTextureBounds(overlay_handle, &bounds);
+			RenderOverlay();
 		}
 		else {
 			RenderStereoTargets();
@@ -2912,6 +2870,56 @@ void CMainApplication::RenderCompanionWindow()
 	glUseProgram( 0 );
 }
 
+//-----------------------------------------------------------------------------
+// Purpose: Present the window/video texture as an overlay
+//-----------------------------------------------------------------------------
+void CMainApplication::RenderOverlay() {
+	GLuint texture_id = 0;
+
+	if(mpv_file) {
+		if(!mpvBuffers)
+			return;
+		texture_id = mpvBuffers->get_showTextureId();
+	}
+	else if (overlay_buffers) {
+		// OpenVR relies on a shared OpenGL context
+		// which does not play well with the GLX
+		// extension used to copy data from the
+		// application, so data should be copied to a
+		// separate texture.
+
+		overlay_buffers->swap_buffer();
+
+		GLuint ref_texture = window_texture_get_opengl_texture_id(&window_texture);
+		texture_id = overlay_buffers->get_showTextureId();
+
+		glActiveTexture(GL_TEXTURE0);
+		glBindTexture(GL_TEXTURE_2D, ref_texture);
+		glBindVertexArray( m_unCompanionWindowVAO );
+		glUseProgram(m_unOverlayProgramID);
+		glUniform1i(glGetUniformLocation(m_unOverlayProgramID, "mytexture"), 0);
+
+		glBindFramebuffer(GL_DRAW_FRAMEBUFFER, overlay_buffers->get_renderFramebufferId());
+
+		glDisable(GL_DEPTH_TEST);
+		glDrawBuffer(GL_COLOR_ATTACHMENT0);
+		glViewport(0, 0, pixmap_texture_width, pixmap_texture_height);
+
+		glDrawElements( GL_TRIANGLES, m_uiCompanionWindowIndexSize/2, GL_UNSIGNED_SHORT, 0 );
+		glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
+	}
+	else
+		return;
+
+	vr::Texture_t overlay_tex = {(void*)(uintptr_t)texture_id,
+		vr::TextureType_OpenGL, vr::ColorSpace_Gamma};
+
+	// Flip OpenGL texture upside down
+	vr::VRTextureBounds_t bounds = {0, 1, 1, 0};
+
+	vr::VROverlay()->SetOverlayTexture(overlay_handle, &overlay_tex);
+	vr::VROverlay()->SetOverlayTextureBounds(overlay_handle, &bounds);
+}
 
 //-----------------------------------------------------------------------------
 // Purpose: Copy the title of the source X11 window as the overlay title
