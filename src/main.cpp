@@ -1209,6 +1209,16 @@ bool CMainApplication::BInitOverlay()
         vr::VROverlay()->SetOverlayFlag(overlay_handle, vr::VROverlayFlags_SendVRDiscreteScrollEvents, true);
         vr::VROverlay()->SetOverlayFlag(overlay_handle, vr::VROverlayFlags_VisibleInDashboard, true);
 
+        if (projection_mode == ProjectionMode::SPHERE360)
+                vr::VROverlay()->SetOverlayFlag(overlay_handle, vr::VROverlayFlags_Panorama, true);
+        else if (view_mode == ViewMode::LEFT_RIGHT)
+                vr::VROverlay()->SetOverlayFlag(overlay_handle, vr::VROverlayFlags_SideBySide_Parallel, true);
+        else if (view_mode == ViewMode::RIGHT_LEFT)
+                vr::VROverlay()->SetOverlayFlag(overlay_handle, vr::VROverlayFlags_SideBySide_Crossed, true);
+
+        if (projection_mode == ProjectionMode::FLAT && stretch)
+                vr::VROverlay()->SetOverlayTexelAspect(overlay_handle, 2.0);
+
         vr::VROverlay()->SetOverlayFromFile(thumbnail_handle, "frog.png");
 
         overlay_xdo = xdo_new_with_opened_display(x_display, nullptr, 0);
@@ -1899,6 +1909,8 @@ void CMainApplication::RenderFrame()
 
         if (!overlay_mode)
                 UpdateHMDMatrixPose();
+        else
+                vr::VROverlay()->WaitFrameSync(20);
 }
 
 //-----------------------------------------------------------------------------
