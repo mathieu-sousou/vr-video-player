@@ -3,12 +3,14 @@ A virtual reality video player for Linux, based on Valve's openvr `hellovr_openg
 Currently only works with stereo video and equirectangular cube maps (youtube 360 videos) when used for vr videos, but if the vr video player is launched with the `--plane` option then you can view
 the video as a regular video in vr without depth (like a cinema).
 
+You can view videos directly in the VR headset or as an overlay in the SteamVR menu if you use the --overlay option.
+
 ## Note
-Might now work when using a compositor such as picom when using the glx backend (when capturing a window).
+Might not work when using a compositor such as picom when using the glx backend (when capturing a window).
 
 # Building
 Run `./build.sh` or if you are running Arch Linux, then you can find it on aur under the name vr-video-player-git (`yay -S vr-video-player-git`).\
-Dependencies needed when building using `build.sh`: `glm, glew, sdl2, openvr, libx11, libxcomposite, libxfixes, libmpv`.
+Dependencies needed when building using `build.sh`: `glm, glew, sdl2, openvr, libx11, libxcomposite, libxfixes, libmpv, libxdo (xdotool)`.
 
 # How to use
 vr-video-player has two options. Either capture a window and view it in vr (works only on x11) or a work-in-progress built-in mpv option.
@@ -61,6 +63,12 @@ Alternatively, you can run:
 ./vr-video-player --follow-focused
 ```
 and vr-video-player will automatically select the focused window (and update when the focused window changes).
+
+To display a window as an overlay in SteamVR you can run:
+```
+./vr-video-player --plane --overlay $(xdotool selectwindow)
+```
+and click on the window you want to view in your VR headset.
 
 # Input options
 The video might not be in front of you, so to move the video in front of you, you can do any of the following:
