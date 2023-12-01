@@ -419,6 +419,7 @@ private: // X compositor
         GLuint m_unOverlayProgramID = 0;
         const char *overlay_key = "vr-video-player";
         xdo_t *overlay_xdo = nullptr;
+        Atom overlay_icon_atom;
 };
 
 
@@ -1206,6 +1207,8 @@ bool CMainApplication::BInitOverlay()
 
         overlay_xdo = xdo_new_with_opened_display(x_display, nullptr, 0);
 
+        overlay_icon_atom = XInternAtom(x_display, "_NET_WM_ICON", 0);
+
 	return true;
 }
 
@@ -1495,6 +1498,88 @@ bool CMainApplication::HandleInput()
                         }
 
                         XFree(name);
+
+                        unsigned long offset = 0;
+                        unsigned long best_offset = (unsigned long)-1;
+                        unsigned long best_size = 0;
+
+                        Atom type;
+                        int format;
+                        unsigned long nitems, bytes_after;
+                        unsigned char *prop_data;
+
+                        while (true) {
+                                XGetWindowProperty(
+                                    x_display, src_window_id, overlay_icon_atom,
+                                    offset, 2, 0, AnyPropertyType, &type,
+                                    &format, &nitems, &bytes_after, &prop_data);
+                                if (nitems != 2) {
+                                        XFree(prop_data);
+                                        break;
+                                }
+
+                                unsigned long width = ((unsigned long *)prop_data)[0];
+                                unsigned long height = ((unsigned long *)prop_data)[1];
+
+                                unsigned long size = width * height;
+
+                                /* OpenVR docs say there's a limit to the amount
+                                 * of data that can be sent but no explicit
+                                 * limit is stated. When loading from a file,
+                                 * the icon size is limited to 1920x1080.
+                                 *
+                                 * Just setting an arbitrary for now. The
+                                 * highest resolution icon I found in my
+                                 * applications is 192x192. */
+                                if (size > best_size && size <= 512 * 512) {
+                                        best_offset = offset;
+                                        best_size = size;
+                                }
+
+                                offset += 2 + size;
+                                XFree(prop_data);
+                        }
+
+                        if (best_offset != (unsigned long)-1) {
+                                XGetWindowProperty(
+                                    x_display, src_window_id, overlay_icon_atom,
+                                    best_offset, 2, 0, AnyPropertyType, &type,
+                                    &format, &nitems, &bytes_after, &prop_data);
+
+                                if (nitems == 2) {
+                                        unsigned long width = ((unsigned long *)prop_data)[0];
+                                        unsigned long height = ((unsigned long *)prop_data)[1];
+
+                                        unsigned long n_expected = width * height;
+                                        unsigned char *icon;
+                                        XGetWindowProperty(
+                                                x_display, src_window_id,
+                                                overlay_icon_atom, best_offset + 2,
+                                                n_expected, 0, AnyPropertyType, &type,
+                                                &format, &nitems, &bytes_after, &icon);
+
+                                        std::vector<uint32_t> icon_data(n_expected);
+                                        for (size_t i = 0; i < n_expected; i++) {
+                                                icon_data[i] = ((unsigned long *)icon)[i] & 0xFFFFFFFFull;
+                                                uint32_t r = (icon_data[i] & 0x000000FF) >> 0;
+                                                uint32_t g = (icon_data[i] & 0x0000FF00) >> 8;
+                                                uint32_t b = (icon_data[i] & 0x00FF0000) >> 16;
+                                                uint32_t a = (icon_data[i] & 0xFF000000) >> 24;
+
+                                                icon_data[i] = b | (g << 8) | (r << 16) | (a << 24);
+                                        }
+
+                                        if (nitems == n_expected) {
+                                                vr::VROverlay()->SetOverlayRaw(
+                                                        thumbnail_handle, icon_data.data(),
+                                                        width, height, sizeof(uint32_t));
+                                        }
+
+                                        XFree(icon);
+                                }
+
+                                XFree(prop_data);
+                        }
                 }
 
 		if(focused_window_changed) {
