@@ -516,7 +516,7 @@ void dprintf( const char *fmt, ... )
 }
 
 static void usage() {
-	fprintf(stderr, "usage: vr-video-player [--sphere|--sphere360|--flat|--plane] [--left-right|--right-left] [--stretch|--no-stretch] [--zoom zoom-level] [--cursor-scale scale] [--cursor-wrap|--no-cursor-wrap] [--follow-focused|--video video|<window_id>] [--use-system-mpv-config] [--mpv-profile <profile>] [--free-camera] [--reduce-flicker]\n");
+	fprintf(stderr, "usage: vr-video-player [--sphere|--sphere360|--flat|--plane] [--left-right|--right-left] [--stretch|--no-stretch] [--zoom zoom-level] [--cursor-scale scale] [--cursor-wrap|--no-cursor-wrap] [--follow-focused|--video video|<window_id>] [--use-system-mpv-config] [--mpv-profile <profile>] [--free-camera] [--reduce-flicker] [--overlay] [--overlay-key <key>] [--no-overlay-mouse]\n");
     fprintf(stderr, "\n");
 	fprintf(stderr, "OPTIONS\n");
     fprintf(stderr, "  --sphere                  View the window as a stereoscopic 180 degrees screen (half sphere). The view will be attached to your head in vr. This is recommended for 180 degrees videos. This is the default value\n");
@@ -537,6 +537,9 @@ static void usage() {
 	fprintf(stderr, "  --video <video>           Select the video to play (using mpv). Either this option, --follow-focused or window_id should be used\n");
 	fprintf(stderr, "  --use-system-mpv-config   Use system (~/.config/mpv/mpv.conf) mpv config. Disabled by default\n");
 	fprintf(stderr, "  --mpv-profile <profile>   Which mpv profile to use. Only applicable when using --video option. Optional, defaults to \"gpu-hq\"\n");
+	fprintf(stderr, "  --overlay                 Run as an OpenVR overlay rather than a standalone application.\n");
+	fprintf(stderr, "  --overlay-key <key>       Name used to identify the OpenVR overlay. Defaults to \"vr-video-player\".\n");
+	fprintf(stderr, "  --no-overlay-mouse        Disable the translation of VR events into mouse events when running as an overlay.\n");
     fprintf(stderr, "  window_id                 The X11 window id of the window to view in vr. Either this option, --follow-focused or --video should be used\n");
     fprintf(stderr, "\n");
     fprintf(stderr, "EXAMPLES\n");
