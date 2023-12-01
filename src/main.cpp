@@ -1305,8 +1305,8 @@ void CMainApplication::Shutdown()
 
 	SDL_Quit();
 
-        if (overlay_xdo)
-                xdo_free(overlay_xdo);
+	if (overlay_xdo)
+		xdo_free(overlay_xdo);
 
 	if (x_display)
 		XCloseDisplay(x_display);
