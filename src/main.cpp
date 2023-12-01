@@ -1192,17 +1192,17 @@ bool CMainApplication::BInitOverlay()
                 &thumbnail_handle
         );
 
-        vr::VROverlay()->SetOverlayInputMethod( overlay_handle, vr::VROverlayInputMethod_Mouse );
+        vr::VROverlay()->SetOverlayInputMethod(overlay_handle, vr::VROverlayInputMethod_Mouse);
 
-        vr::VROverlay()->SetOverlayFlag( overlay_handle, vr::VROverlayFlags_IgnoreTextureAlpha,		true );
-        vr::VROverlay()->SetOverlayFlag( overlay_handle, vr::VROverlayFlags_EnableControlBar,			true );
-        vr::VROverlay()->SetOverlayFlag( overlay_handle, vr::VROverlayFlags_EnableControlBarKeyboard,	true );
-        vr::VROverlay()->SetOverlayFlag( overlay_handle, vr::VROverlayFlags_EnableControlBarClose,	true );
-        vr::VROverlay()->SetOverlayFlag( overlay_handle, vr::VROverlayFlags_WantsModalBehavior,	    false );
-        vr::VROverlay()->SetOverlayFlag( overlay_handle, vr::VROverlayFlags_SendVRSmoothScrollEvents, true );
-        vr::VROverlay()->SetOverlayFlag( overlay_handle, vr::VROverlayFlags_VisibleInDashboard,       true );
+        vr::VROverlay()->SetOverlayFlag(overlay_handle, vr::VROverlayFlags_IgnoreTextureAlpha, true);
+        vr::VROverlay()->SetOverlayFlag(overlay_handle, vr::VROverlayFlags_EnableControlBar, true);
+        vr::VROverlay()->SetOverlayFlag(overlay_handle, vr::VROverlayFlags_EnableControlBarKeyboard, true);
+        vr::VROverlay()->SetOverlayFlag(overlay_handle, vr::VROverlayFlags_EnableControlBarClose, true);
+        vr::VROverlay()->SetOverlayFlag(overlay_handle, vr::VROverlayFlags_WantsModalBehavior, false);
+        vr::VROverlay()->SetOverlayFlag(overlay_handle, vr::VROverlayFlags_SendVRDiscreteScrollEvents, true);
+        vr::VROverlay()->SetOverlayFlag(overlay_handle, vr::VROverlayFlags_VisibleInDashboard, true);
 
-        vr::VROverlay()->SetOverlayFromFile( thumbnail_handle, "frog.png");
+        vr::VROverlay()->SetOverlayFromFile(thumbnail_handle, "frog.png");
 
         overlay_xdo = xdo_new_with_opened_display(x_display, nullptr, 0);
 
@@ -1661,6 +1661,15 @@ void CMainApplication::ProcessVREvent( const vr::VREvent_t & event )
                 if (overlay_xdo && src_window_id != None) {
                         xdo_mouse_down(overlay_xdo, src_window_id,
                                        event.data.mouse.button);
+                }
+                break;
+
+        case vr::VREvent_ScrollDiscrete:
+                if (overlay_xdo && src_window_id != None) {
+                        if (event.data.scroll.ydelta > 0)
+                                xdo_click_window(overlay_xdo, src_window_id, 4);
+                        else if (event.data.scroll.ydelta < 0)
+                                xdo_click_window(overlay_xdo, src_window_id, 5);
                 }
                 break;
 	}
