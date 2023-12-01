@@ -420,6 +420,7 @@ private: // X compositor
         const char *overlay_key = "vr-video-player";
         xdo_t *overlay_xdo = nullptr;
         Atom overlay_icon_atom;
+	bool overlay_mouse_controls = true;
 };
 
 
@@ -717,6 +718,8 @@ CMainApplication::CMainApplication( int argc, char *argv[] )
 		} else if(strcmp(argv[i], "--overlay-key") == 0 && i < argc - 1) {
                          overlay_key = argv[i + 1];
                          ++i;
+                } else if(strcmp(argv[i], "--no-overlay-mouse") == 0) {
+                         overlay_mouse_controls = false;
                 }
                 else if(argv[i][0] == '-') {
 			fprintf(stderr, "Invalid flag: %s\n", argv[i]);
@@ -1193,7 +1196,10 @@ bool CMainApplication::BInitOverlay()
                 &thumbnail_handle
         );
 
-        vr::VROverlay()->SetOverlayInputMethod(overlay_handle, vr::VROverlayInputMethod_Mouse);
+        if (overlay_mouse_controls)
+                vr::VROverlay()->SetOverlayInputMethod(overlay_handle, vr::VROverlayInputMethod_Mouse);
+        else
+                vr::VROverlay()->SetOverlayInputMethod(overlay_handle, vr::VROverlayInputMethod_None);
 
         vr::VROverlay()->SetOverlayFlag(overlay_handle, vr::VROverlayFlags_IgnoreTextureAlpha, true);
         vr::VROverlay()->SetOverlayFlag(overlay_handle, vr::VROverlayFlags_EnableControlBar, true);
