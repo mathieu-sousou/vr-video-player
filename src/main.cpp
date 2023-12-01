@@ -1308,6 +1308,9 @@ void CMainApplication::Shutdown()
 	if (overlay_xdo)
 		xdo_free(overlay_xdo);
 
+	if (overlay_buffers)
+		delete overlay_buffers;
+
 	if (x_display)
 		XCloseDisplay(x_display);
 }
