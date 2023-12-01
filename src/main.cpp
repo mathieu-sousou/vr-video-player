@@ -423,6 +423,7 @@ private: // X compositor
 	VideoBuffers *overlay_buffers = nullptr;
 	GLuint m_unOverlayProgramID = 0;
 	const char *overlay_key = "vr-video-player";
+	float overlay_width = 2.5f;
 	xdo_t *overlay_xdo = nullptr;
 	Atom overlay_icon_atom;
 	bool overlay_mouse_controls = true;
@@ -516,7 +517,7 @@ void dprintf( const char *fmt, ... )
 }
 
 static void usage() {
-	fprintf(stderr, "usage: vr-video-player [--sphere|--sphere360|--flat|--plane] [--left-right|--right-left] [--stretch|--no-stretch] [--zoom zoom-level] [--cursor-scale scale] [--cursor-wrap|--no-cursor-wrap] [--follow-focused|--video video|<window_id>] [--use-system-mpv-config] [--mpv-profile <profile>] [--free-camera] [--reduce-flicker] [--overlay] [--overlay-key <key>] [--overlay-mouse|--no-overlay-mouse]\n");
+	fprintf(stderr, "usage: vr-video-player [--sphere|--sphere360|--flat|--plane] [--left-right|--right-left] [--stretch|--no-stretch] [--zoom zoom-level] [--cursor-scale scale] [--cursor-wrap|--no-cursor-wrap] [--follow-focused|--video video|<window_id>] [--use-system-mpv-config] [--mpv-profile <profile>] [--free-camera] [--reduce-flicker] [--overlay] [--overlay-key <key>] [--overlay-mouse|--no-overlay-mouse] [--overlay-width <width>]\n");
     fprintf(stderr, "\n");
 	fprintf(stderr, "OPTIONS\n");
     fprintf(stderr, "  --sphere                  View the window as a stereoscopic 180 degrees screen (half sphere). The view will be attached to your head in vr. This is recommended for 180 degrees videos. This is the default value\n");
@@ -541,6 +542,7 @@ static void usage() {
 	fprintf(stderr, "  --overlay-key <key>       Name used to identify the OpenVR overlay. Defaults to \"vr-video-player\".\n");
 	fprintf(stderr, "  --overlay-mouse           Enable the translation of VR events into mouse events when running as an overlay. This is the default value.\n");
 	fprintf(stderr, "  --no-overlay-mouse        Disable the translation of VR events into mouse events when running as an overlay.\n");
+	fprintf(stderr, "  --overlay-width <width>   Overlay width in meters. Defaults to 2.5.\n");
     fprintf(stderr, "  window_id                 The X11 window id of the window to view in vr. Either this option, --follow-focused or --video should be used\n");
     fprintf(stderr, "\n");
     fprintf(stderr, "EXAMPLES\n");
@@ -727,6 +729,9 @@ CMainApplication::CMainApplication( int argc, char *argv[] )
 			overlay_mode = true;
 		} else if(strcmp(argv[i], "--overlay-key") == 0 && i < argc - 1) {
 			overlay_key = argv[i + 1];
+			++i;
+		} else if(strcmp(argv[i], "--overlay-width") == 0 && i < argc - 1) {
+			overlay_width = atof(argv[i + 1]);
 			++i;
 		} else if(strcmp(argv[i], "--overlay-mouse") == 0) {
 			overlay_mouse_controls = true;
@@ -1233,6 +1238,8 @@ bool CMainApplication::BInitOverlay()
 
 	if (projection_mode == ProjectionMode::FLAT && stretch)
 		vr::VROverlay()->SetOverlayTexelAspect(overlay_handle, 2.0);
+
+	vr::VROverlay()->SetOverlayWidthInMeters(overlay_handle, overlay_width);
 
 	overlay_xdo = xdo_new_with_opened_display(x_display, nullptr, 0);
 
