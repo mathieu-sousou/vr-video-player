@@ -221,6 +221,8 @@ public:
 	void RenderScene( vr::Hmd_Eye nEye );
 
 	void UpdateOverlayTitle();
+	void UpdateOverlayIcon();
+	unsigned long FindBestOverlayIcon();
 
 	glm::mat4 GetHMDMatrixProjectionEye( vr::Hmd_Eye nEye );
 	glm::mat4 GetHMDMatrixPoseEye( vr::Hmd_Eye nEye );
@@ -1505,88 +1507,7 @@ bool CMainApplication::HandleInput()
 			vr::VROverlay()->SetOverlayMouseScale(overlay_handle, &scale);
 
 			UpdateOverlayTitle();
-
-			unsigned long offset = 0;
-			unsigned long best_offset = (unsigned long)-1;
-			unsigned long best_size = 0;
-
-			Atom type;
-			int format;
-			unsigned long nitems, bytes_after;
-			unsigned char *prop_data;
-
-			while (true) {
-				XGetWindowProperty(
-				    x_display, src_window_id, overlay_icon_atom,
-				    offset, 2, 0, AnyPropertyType, &type,
-				    &format, &nitems, &bytes_after, &prop_data);
-				if (nitems != 2) {
-					XFree(prop_data);
-					break;
-				}
-
-				unsigned long width = ((unsigned long *)prop_data)[0];
-				unsigned long height = ((unsigned long *)prop_data)[1];
-
-				unsigned long size = width * height;
-
-				/* OpenVR docs say there's a limit to the amount
-				 * of data that can be sent but no explicit
-				 * limit is stated. When loading from a file,
-				 * the icon size is limited to 1920x1080.
-				 *
-				 * Just setting an arbitrary for now. The
-				 * highest resolution icon I found in my
-				 * applications is 192x192. */
-				if (size > best_size && size <= 512 * 512) {
-					best_offset = offset;
-					best_size = size;
-				}
-
-				offset += 2 + size;
-				XFree(prop_data);
-			}
-
-			if (best_offset != (unsigned long)-1) {
-				XGetWindowProperty(
-				    x_display, src_window_id, overlay_icon_atom,
-				    best_offset, 2, 0, AnyPropertyType, &type,
-				    &format, &nitems, &bytes_after, &prop_data);
-
-				if (nitems == 2) {
-					unsigned long width = ((unsigned long *)prop_data)[0];
-					unsigned long height = ((unsigned long *)prop_data)[1];
-
-					unsigned long n_expected = width * height;
-					unsigned char *icon;
-					XGetWindowProperty(
-						x_display, src_window_id,
-						overlay_icon_atom, best_offset + 2,
-						n_expected, 0, AnyPropertyType, &type,
-						&format, &nitems, &bytes_after, &icon);
-
-					std::vector<uint32_t> icon_data(n_expected);
-					for (size_t i = 0; i < n_expected; i++) {
-						icon_data[i] = ((unsigned long *)icon)[i] & 0xFFFFFFFFull;
-						uint32_t r = (icon_data[i] & 0x000000FF) >> 0;
-						uint32_t g = (icon_data[i] & 0x0000FF00) >> 8;
-						uint32_t b = (icon_data[i] & 0x00FF0000) >> 16;
-						uint32_t a = (icon_data[i] & 0xFF000000) >> 24;
-
-						icon_data[i] = b | (g << 8) | (r << 16) | (a << 24);
-					}
-
-					if (nitems == n_expected) {
-						vr::VROverlay()->SetOverlayRaw(
-							thumbnail_handle, icon_data.data(),
-							width, height, sizeof(uint32_t));
-					}
-
-					XFree(icon);
-				}
-
-				XFree(prop_data);
-			}
+			UpdateOverlayIcon();
 		}
 
 		if(focused_window_changed) {
@@ -3011,6 +2932,117 @@ void CMainApplication::UpdateOverlayTitle() {
 
 	vr::VROverlay()->SetOverlayName(overlay_handle, name_str.c_str());
 	XFree(name);
+}
+
+//-----------------------------------------------------------------------------
+// Purpose: Update the overlay thumbnail icon to match the source window icon.
+//-----------------------------------------------------------------------------
+void CMainApplication::UpdateOverlayIcon() {
+	unsigned long best_offset = FindBestOverlayIcon();
+
+	if (best_offset == (unsigned long)-1)
+		return;
+
+	Atom type;
+	int format;
+	unsigned long nitems, bytes_after;
+	unsigned char *prop_data;
+
+	XGetWindowProperty(
+		x_display, src_window_id, overlay_icon_atom,
+		best_offset, 2, 0, AnyPropertyType, &type,
+		&format, &nitems, &bytes_after, &prop_data);
+
+	if (nitems != 2) {
+		XFree(prop_data);
+		return;
+	}
+
+	unsigned long width = ((unsigned long *)prop_data)[0];
+	unsigned long height = ((unsigned long *)prop_data)[1];
+
+	unsigned long n_expected = width * height;
+	unsigned char *icon;
+	XGetWindowProperty(
+		x_display, src_window_id,
+		overlay_icon_atom, best_offset + 2,
+		n_expected, 0, AnyPropertyType, &type,
+		&format, &nitems, &bytes_after, &icon);
+
+	if (nitems != n_expected) {
+		XFree(prop_data);
+		XFree(icon);
+		return;
+	}
+
+	std::vector<uint32_t> icon_data(n_expected);
+	for (size_t i = 0; i < n_expected; i++) {
+		icon_data[i] = ((unsigned long *)icon)[i] & 0xFFFFFFFFull;
+		uint32_t r = (icon_data[i] & 0x000000FF) >> 0;
+		uint32_t g = (icon_data[i] & 0x0000FF00) >> 8;
+		uint32_t b = (icon_data[i] & 0x00FF0000) >> 16;
+		uint32_t a = (icon_data[i] & 0xFF000000) >> 24;
+
+		icon_data[i] = b | (g << 8) | (r << 16) | (a << 24);
+	}
+
+	vr::VROverlay()->SetOverlayRaw(
+		thumbnail_handle, icon_data.data(),
+		width, height, sizeof(uint32_t));
+
+	XFree(icon);
+	XFree(prop_data);
+}
+
+//-----------------------------------------------------------------------------
+// Purpose: Find the highest resolution icon that can be used as an overlay icon
+// and return its offset within _NET_WM_ICON.
+//
+// Will return -1 if no suitable icon is found.
+//-----------------------------------------------------------------------------
+unsigned long CMainApplication::FindBestOverlayIcon() {
+	unsigned long offset = 0;
+	unsigned long best_offset = (unsigned long)-1;
+	unsigned long best_size = 0;
+
+	Atom type;
+	int format;
+	unsigned long nitems, bytes_after;
+	unsigned char *prop_data;
+
+	while (true) {
+		XGetWindowProperty(
+			x_display, src_window_id, overlay_icon_atom,
+			offset, 2, 0, AnyPropertyType, &type,
+			&format, &nitems, &bytes_after, &prop_data);
+		if (nitems != 2) {
+			XFree(prop_data);
+			break;
+		}
+
+		unsigned long width = ((unsigned long *)prop_data)[0];
+		unsigned long height = ((unsigned long *)prop_data)[1];
+
+		unsigned long size = width * height;
+
+		// OpenVR docs say there's a limit to the amount
+		// of data that can be sent but no explicit
+		// limit is stated. When loading from a file,
+		// the icon size is limited to 1920x1080.
+		//
+		// Just setting an arbitrary for now. The
+		// highest resolution icon I found in my
+		// applications is 192x192
+		if (size > best_size && size <= 512 * 512) {
+			best_offset = offset;
+			best_size = size;
+		}
+
+		offset += 2 + size;
+		XFree(prop_data);
+	}
+
+	return best_offset;
 }
 
 //-----------------------------------------------------------------------------
