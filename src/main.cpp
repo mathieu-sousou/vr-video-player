@@ -75,13 +75,13 @@
 // Not in public headers yet.
 namespace vr
 {
-    const VROverlayFlags VROverlayFlags_EnableControlBar = (VROverlayFlags)(1 << 23);
-    const VROverlayFlags VROverlayFlags_EnableControlBarKeyboard = (VROverlayFlags)(1 << 24);
-    const VROverlayFlags VROverlayFlags_EnableControlBarClose = (VROverlayFlags)(1 << 25);
-    const VROverlayFlags VROverlayFlags_EnableControlBarSteamUI = (VROverlayFlags)(1 << 26);
+	const VROverlayFlags VROverlayFlags_EnableControlBar = (VROverlayFlags)(1 << 23);
+	const VROverlayFlags VROverlayFlags_EnableControlBarKeyboard = (VROverlayFlags)(1 << 24);
+	const VROverlayFlags VROverlayFlags_EnableControlBarClose = (VROverlayFlags)(1 << 25);
+	const VROverlayFlags VROverlayFlags_EnableControlBarSteamUI = (VROverlayFlags)(1 << 26);
 
-    const EVRButtonId k_EButton_Steam = (EVRButtonId)(50);
-    const EVRButtonId k_EButton_QAM = (EVRButtonId)(51);
+	const EVRButtonId k_EButton_Steam = (EVRButtonId)(50);
+	const EVRButtonId k_EButton_QAM = (EVRButtonId)(51);
 }
 
 static bool g_bPrintf = true;
@@ -194,7 +194,7 @@ public:
 	bool BInit();
 	bool BInitGL();
 	bool BInitCompositor();
-        bool BInitOverlay();
+	bool BInitOverlay();
 
 	void Shutdown();
 
@@ -412,14 +412,14 @@ private: // X compositor
 
 	bool config_exists = false;
 
-        bool overlay_mode = false;
-        vr::VROverlayHandle_t overlay_handle = vr::k_ulOverlayHandleInvalid;
-        vr::VROverlayHandle_t thumbnail_handle = vr::k_ulOverlayHandleInvalid;
-        VideoBuffers *overlay_buffers = nullptr;
-        GLuint m_unOverlayProgramID = 0;
-        const char *overlay_key = "vr-video-player";
-        xdo_t *overlay_xdo = nullptr;
-        Atom overlay_icon_atom;
+	bool overlay_mode = false;
+	vr::VROverlayHandle_t overlay_handle = vr::k_ulOverlayHandleInvalid;
+	vr::VROverlayHandle_t thumbnail_handle = vr::k_ulOverlayHandleInvalid;
+	VideoBuffers *overlay_buffers = nullptr;
+	GLuint m_unOverlayProgramID = 0;
+	const char *overlay_key = "vr-video-player";
+	xdo_t *overlay_xdo = nullptr;
+	Atom overlay_icon_atom;
 	bool overlay_mouse_controls = true;
 };
 
@@ -716,12 +716,12 @@ CMainApplication::CMainApplication( int argc, char *argv[] )
 		} else if(strcmp(argv[i], "--overlay") == 0) {
 			overlay_mode = true;
 		} else if(strcmp(argv[i], "--overlay-key") == 0 && i < argc - 1) {
-                         overlay_key = argv[i + 1];
-                         ++i;
-                } else if(strcmp(argv[i], "--no-overlay-mouse") == 0) {
-                         overlay_mouse_controls = false;
-                }
-                else if(argv[i][0] == '-') {
+			overlay_key = argv[i + 1];
+			++i;
+		} else if(strcmp(argv[i], "--no-overlay-mouse") == 0) {
+			overlay_mouse_controls = false;
+		}
+		else if(argv[i][0] == '-') {
 			fprintf(stderr, "Invalid flag: %s\n", argv[i]);
 			usage();
 		} else {
@@ -896,7 +896,7 @@ bool CMainApplication::BInit()
 	// Loading the SteamVR Runtime
 	vr::EVRInitError eError = vr::VRInitError_None;
 
-        vr::EVRApplicationType appType = overlay_mode ? vr::VRApplication_Overlay : vr::VRApplication_Scene;
+	vr::EVRApplicationType appType = overlay_mode ? vr::VRApplication_Overlay : vr::VRApplication_Scene;
 	m_pHMD = vr::VR_Init( &eError, appType );
 
 	if ( eError != vr::VRInitError_None )
@@ -915,10 +915,10 @@ bool CMainApplication::BInit()
 	int nWindowPosX = 700;
 	int nWindowPosY = 100;
 	Uint32 unWindowFlags = SDL_WINDOW_OPENGL;
-        if (!overlay_mode)
-                unWindowFlags |= SDL_WINDOW_SHOWN;
-        else
-                unWindowFlags |= SDL_WINDOW_HIDDEN;
+	if (!overlay_mode)
+		unWindowFlags |= SDL_WINDOW_SHOWN;
+	else
+		unWindowFlags |= SDL_WINDOW_HIDDEN;
 
 	SDL_GL_SetAttribute( SDL_GL_CONTEXT_MAJOR_VERSION, 3 );
 	SDL_GL_SetAttribute( SDL_GL_CONTEXT_MINOR_VERSION, 2 );
@@ -1093,11 +1093,11 @@ bool CMainApplication::BInit()
 
 	fprintf(stderr, "Using openvr config file: %s\n", action_manifest_path);
 
-        if (!overlay_mode) {
-                vr::VRInput()->SetActionManifestPath(action_manifest_path);
-                vr::VRInput()->GetActionHandle( "/actions/demo/in/HideCubes", &m_actionHideCubes );
-                vr::VRInput()->GetActionSetHandle( "/actions/demo", &m_actionsetDemo );
-        }
+	if (!overlay_mode) {
+		vr::VRInput()->SetActionManifestPath(action_manifest_path);
+		vr::VRInput()->GetActionHandle( "/actions/demo/in/HideCubes", &m_actionHideCubes );
+		vr::VRInput()->GetActionSetHandle( "/actions/demo", &m_actionsetDemo );
+	}
 
 	return true;
 }
@@ -1189,41 +1189,41 @@ bool CMainApplication::BInitOverlay()
 		return false;
 	}
 
-        vr::VROverlay()->CreateDashboardOverlay(
-                overlay_key,
-                mpv_file ? mpv_file : "vr-video-player",
-                &overlay_handle,
-                &thumbnail_handle
-        );
+	vr::VROverlay()->CreateDashboardOverlay(
+		overlay_key,
+		mpv_file ? mpv_file : "vr-video-player",
+		&overlay_handle,
+		&thumbnail_handle
+	);
 
-        if (overlay_mouse_controls)
-                vr::VROverlay()->SetOverlayInputMethod(overlay_handle, vr::VROverlayInputMethod_Mouse);
-        else
-                vr::VROverlay()->SetOverlayInputMethod(overlay_handle, vr::VROverlayInputMethod_None);
+	if (overlay_mouse_controls)
+		vr::VROverlay()->SetOverlayInputMethod(overlay_handle, vr::VROverlayInputMethod_Mouse);
+	else
+		vr::VROverlay()->SetOverlayInputMethod(overlay_handle, vr::VROverlayInputMethod_None);
 
-        vr::VROverlay()->SetOverlayFlag(overlay_handle, vr::VROverlayFlags_IgnoreTextureAlpha, true);
-        vr::VROverlay()->SetOverlayFlag(overlay_handle, vr::VROverlayFlags_EnableControlBar, true);
-        vr::VROverlay()->SetOverlayFlag(overlay_handle, vr::VROverlayFlags_EnableControlBarKeyboard, true);
-        vr::VROverlay()->SetOverlayFlag(overlay_handle, vr::VROverlayFlags_EnableControlBarClose, true);
-        vr::VROverlay()->SetOverlayFlag(overlay_handle, vr::VROverlayFlags_WantsModalBehavior, false);
-        vr::VROverlay()->SetOverlayFlag(overlay_handle, vr::VROverlayFlags_SendVRDiscreteScrollEvents, true);
-        vr::VROverlay()->SetOverlayFlag(overlay_handle, vr::VROverlayFlags_VisibleInDashboard, true);
+	vr::VROverlay()->SetOverlayFlag(overlay_handle, vr::VROverlayFlags_IgnoreTextureAlpha, true);
+	vr::VROverlay()->SetOverlayFlag(overlay_handle, vr::VROverlayFlags_EnableControlBar, true);
+	vr::VROverlay()->SetOverlayFlag(overlay_handle, vr::VROverlayFlags_EnableControlBarKeyboard, true);
+	vr::VROverlay()->SetOverlayFlag(overlay_handle, vr::VROverlayFlags_EnableControlBarClose, true);
+	vr::VROverlay()->SetOverlayFlag(overlay_handle, vr::VROverlayFlags_WantsModalBehavior, false);
+	vr::VROverlay()->SetOverlayFlag(overlay_handle, vr::VROverlayFlags_SendVRDiscreteScrollEvents, true);
+	vr::VROverlay()->SetOverlayFlag(overlay_handle, vr::VROverlayFlags_VisibleInDashboard, true);
 
-        if (projection_mode == ProjectionMode::SPHERE360)
-                vr::VROverlay()->SetOverlayFlag(overlay_handle, vr::VROverlayFlags_Panorama, true);
-        else if (view_mode == ViewMode::LEFT_RIGHT)
-                vr::VROverlay()->SetOverlayFlag(overlay_handle, vr::VROverlayFlags_SideBySide_Parallel, true);
-        else if (view_mode == ViewMode::RIGHT_LEFT)
-                vr::VROverlay()->SetOverlayFlag(overlay_handle, vr::VROverlayFlags_SideBySide_Crossed, true);
+	if (projection_mode == ProjectionMode::SPHERE360)
+		vr::VROverlay()->SetOverlayFlag(overlay_handle, vr::VROverlayFlags_Panorama, true);
+	else if (view_mode == ViewMode::LEFT_RIGHT)
+		vr::VROverlay()->SetOverlayFlag(overlay_handle, vr::VROverlayFlags_SideBySide_Parallel, true);
+	else if (view_mode == ViewMode::RIGHT_LEFT)
+		vr::VROverlay()->SetOverlayFlag(overlay_handle, vr::VROverlayFlags_SideBySide_Crossed, true);
 
-        if (projection_mode == ProjectionMode::FLAT && stretch)
-                vr::VROverlay()->SetOverlayTexelAspect(overlay_handle, 2.0);
+	if (projection_mode == ProjectionMode::FLAT && stretch)
+		vr::VROverlay()->SetOverlayTexelAspect(overlay_handle, 2.0);
 
-        vr::VROverlay()->SetOverlayFromFile(thumbnail_handle, "frog.png");
+	vr::VROverlay()->SetOverlayFromFile(thumbnail_handle, "frog.png");
 
-        overlay_xdo = xdo_new_with_opened_display(x_display, nullptr, 0);
+	overlay_xdo = xdo_new_with_opened_display(x_display, nullptr, 0);
 
-        overlay_icon_atom = XInternAtom(x_display, "_NET_WM_ICON", 0);
+	overlay_icon_atom = XInternAtom(x_display, "_NET_WM_ICON", 0);
 
 	return true;
 }
@@ -1494,109 +1494,109 @@ bool CMainApplication::HandleInput()
 		window_resize_time = SDL_GetTicks();
 		window_resized = false;
 
-                if (overlay_mode) {
-                        vr::HmdVector2_t scale = {(float)window_width, (float)window_height};
-                        vr::VROverlay()->SetOverlayMouseScale(overlay_handle, &scale);
+		if (overlay_mode) {
+			vr::HmdVector2_t scale = {(float)window_width, (float)window_height};
+			vr::VROverlay()->SetOverlayMouseScale(overlay_handle, &scale);
 
-                        unsigned char *name = nullptr;
-                        int name_len = 0;
-                        int name_type = 0;
-                        xdo_get_window_name(overlay_xdo, src_window_id,
-                                            &name, &name_len, &name_type);
+			unsigned char *name = nullptr;
+			int name_len = 0;
+			int name_type = 0;
+			xdo_get_window_name(overlay_xdo, src_window_id,
+					    &name, &name_len, &name_type);
 
-                        if (name && name_len > 0) {
-                                std::string name_str;
-                                name_str.resize(name_len);
-                                for (int i = 0; i < name_len; i++)
-                                  name_str[i] = name[i];
+			if (name && name_len > 0) {
+				std::string name_str;
+				name_str.resize(name_len);
+				for (int i = 0; i < name_len; i++)
+				  name_str[i] = name[i];
 
-                                vr::VROverlay()->SetOverlayName(overlay_handle, name_str.c_str());
-                        }
+				vr::VROverlay()->SetOverlayName(overlay_handle, name_str.c_str());
+			}
 
-                        XFree(name);
+			XFree(name);
 
-                        unsigned long offset = 0;
-                        unsigned long best_offset = (unsigned long)-1;
-                        unsigned long best_size = 0;
+			unsigned long offset = 0;
+			unsigned long best_offset = (unsigned long)-1;
+			unsigned long best_size = 0;
 
-                        Atom type;
-                        int format;
-                        unsigned long nitems, bytes_after;
-                        unsigned char *prop_data;
+			Atom type;
+			int format;
+			unsigned long nitems, bytes_after;
+			unsigned char *prop_data;
 
-                        while (true) {
-                                XGetWindowProperty(
-                                    x_display, src_window_id, overlay_icon_atom,
-                                    offset, 2, 0, AnyPropertyType, &type,
-                                    &format, &nitems, &bytes_after, &prop_data);
-                                if (nitems != 2) {
-                                        XFree(prop_data);
-                                        break;
-                                }
+			while (true) {
+				XGetWindowProperty(
+				    x_display, src_window_id, overlay_icon_atom,
+				    offset, 2, 0, AnyPropertyType, &type,
+				    &format, &nitems, &bytes_after, &prop_data);
+				if (nitems != 2) {
+					XFree(prop_data);
+					break;
+				}
 
-                                unsigned long width = ((unsigned long *)prop_data)[0];
-                                unsigned long height = ((unsigned long *)prop_data)[1];
+				unsigned long width = ((unsigned long *)prop_data)[0];
+				unsigned long height = ((unsigned long *)prop_data)[1];
 
-                                unsigned long size = width * height;
+				unsigned long size = width * height;
 
-                                /* OpenVR docs say there's a limit to the amount
-                                 * of data that can be sent but no explicit
-                                 * limit is stated. When loading from a file,
-                                 * the icon size is limited to 1920x1080.
-                                 *
-                                 * Just setting an arbitrary for now. The
-                                 * highest resolution icon I found in my
-                                 * applications is 192x192. */
-                                if (size > best_size && size <= 512 * 512) {
-                                        best_offset = offset;
-                                        best_size = size;
-                                }
+				/* OpenVR docs say there's a limit to the amount
+				 * of data that can be sent but no explicit
+				 * limit is stated. When loading from a file,
+				 * the icon size is limited to 1920x1080.
+				 *
+				 * Just setting an arbitrary for now. The
+				 * highest resolution icon I found in my
+				 * applications is 192x192. */
+				if (size > best_size && size <= 512 * 512) {
+					best_offset = offset;
+					best_size = size;
+				}
 
-                                offset += 2 + size;
-                                XFree(prop_data);
-                        }
+				offset += 2 + size;
+				XFree(prop_data);
+			}
 
-                        if (best_offset != (unsigned long)-1) {
-                                XGetWindowProperty(
-                                    x_display, src_window_id, overlay_icon_atom,
-                                    best_offset, 2, 0, AnyPropertyType, &type,
-                                    &format, &nitems, &bytes_after, &prop_data);
+			if (best_offset != (unsigned long)-1) {
+				XGetWindowProperty(
+				    x_display, src_window_id, overlay_icon_atom,
+				    best_offset, 2, 0, AnyPropertyType, &type,
+				    &format, &nitems, &bytes_after, &prop_data);
 
-                                if (nitems == 2) {
-                                        unsigned long width = ((unsigned long *)prop_data)[0];
-                                        unsigned long height = ((unsigned long *)prop_data)[1];
+				if (nitems == 2) {
+					unsigned long width = ((unsigned long *)prop_data)[0];
+					unsigned long height = ((unsigned long *)prop_data)[1];
 
-                                        unsigned long n_expected = width * height;
-                                        unsigned char *icon;
-                                        XGetWindowProperty(
-                                                x_display, src_window_id,
-                                                overlay_icon_atom, best_offset + 2,
-                                                n_expected, 0, AnyPropertyType, &type,
-                                                &format, &nitems, &bytes_after, &icon);
+					unsigned long n_expected = width * height;
+					unsigned char *icon;
+					XGetWindowProperty(
+						x_display, src_window_id,
+						overlay_icon_atom, best_offset + 2,
+						n_expected, 0, AnyPropertyType, &type,
+						&format, &nitems, &bytes_after, &icon);
 
-                                        std::vector<uint32_t> icon_data(n_expected);
-                                        for (size_t i = 0; i < n_expected; i++) {
-                                                icon_data[i] = ((unsigned long *)icon)[i] & 0xFFFFFFFFull;
-                                                uint32_t r = (icon_data[i] & 0x000000FF) >> 0;
-                                                uint32_t g = (icon_data[i] & 0x0000FF00) >> 8;
-                                                uint32_t b = (icon_data[i] & 0x00FF0000) >> 16;
-                                                uint32_t a = (icon_data[i] & 0xFF000000) >> 24;
+					std::vector<uint32_t> icon_data(n_expected);
+					for (size_t i = 0; i < n_expected; i++) {
+						icon_data[i] = ((unsigned long *)icon)[i] & 0xFFFFFFFFull;
+						uint32_t r = (icon_data[i] & 0x000000FF) >> 0;
+						uint32_t g = (icon_data[i] & 0x0000FF00) >> 8;
+						uint32_t b = (icon_data[i] & 0x00FF0000) >> 16;
+						uint32_t a = (icon_data[i] & 0xFF000000) >> 24;
 
-                                                icon_data[i] = b | (g << 8) | (r << 16) | (a << 24);
-                                        }
+						icon_data[i] = b | (g << 8) | (r << 16) | (a << 24);
+					}
 
-                                        if (nitems == n_expected) {
-                                                vr::VROverlay()->SetOverlayRaw(
-                                                        thumbnail_handle, icon_data.data(),
-                                                        width, height, sizeof(uint32_t));
-                                        }
+					if (nitems == n_expected) {
+						vr::VROverlay()->SetOverlayRaw(
+							thumbnail_handle, icon_data.data(),
+							width, height, sizeof(uint32_t));
+					}
 
-                                        XFree(icon);
-                                }
+					XFree(icon);
+				}
 
-                                XFree(prop_data);
-                        }
-                }
+				XFree(prop_data);
+			}
+		}
 
 		if(focused_window_changed) {
 			XSelectInput(x_display, src_window_id, StructureNotifyMask|VisibilityChangeMask|KeyPressMask|KeyReleaseMask);
@@ -1618,13 +1618,13 @@ bool CMainApplication::HandleInput()
 		if(pixmap_texture_height == 0)
 			pixmap_texture_height = 1;
 
-                if (overlay_mode) {
-                        if (overlay_buffers) {
-                                delete overlay_buffers;
-                                overlay_buffers = nullptr;
-                        }
-                        overlay_buffers = new VideoBuffers(pixmap_texture_width, pixmap_texture_height);
-                }
+		if (overlay_mode) {
+			if (overlay_buffers) {
+				delete overlay_buffers;
+				overlay_buffers = nullptr;
+			}
+			overlay_buffers = new VideoBuffers(pixmap_texture_width, pixmap_texture_height);
+		}
 		glBindTexture(GL_TEXTURE_2D, 0);
 		SetupScene();
 	} else if(!window_resized && zoom_resize) {
@@ -1646,38 +1646,38 @@ bool CMainApplication::HandleInput()
 		ProcessVREvent( event );
 	}
 
-        if (overlay_mode) {
-                vr::VREvent_t vrEvent;
-                while( vr::VROverlay()->PollNextOverlayEvent(
-                               overlay_handle, &vrEvent, sizeof( vrEvent ) ) ) {
-                        ProcessVREvent( event );
-                }
-        }
+	if (overlay_mode) {
+		vr::VREvent_t vrEvent;
+		while( vr::VROverlay()->PollNextOverlayEvent(
+				overlay_handle, &vrEvent, sizeof( vrEvent ) ) ) {
+			ProcessVREvent( event );
+		}
+	}
 
-        if (!overlay_mode) {
-                // Process SteamVR action state
-                // UpdateActionState is called each frame to update the state of
-                // the actions themselves. The application controls which action
-                // sets are active with the provided array of
-                // VRActiveActionSet_t structs.
-                vr::VRActiveActionSet_t actionSet = {0};
-                actionSet.ulActionSet = m_actionsetDemo;
-                vr::VRInput()->UpdateActionState(&actionSet, sizeof(actionSet),
-                                                 1);
+	if (!overlay_mode) {
+		// Process SteamVR action state
+		// UpdateActionState is called each frame to update the state of
+		// the actions themselves. The application controls which action
+		// sets are active with the provided array of
+		// VRActiveActionSet_t structs.
+		vr::VRActiveActionSet_t actionSet = {0};
+		actionSet.ulActionSet = m_actionsetDemo;
+		vr::VRInput()->UpdateActionState(&actionSet, sizeof(actionSet),
+						 1);
 
-                if (GetDigitalActionState(m_actionHideCubes) ||
-                    m_bResetRotation) {
-                        printf("reset rotation!\n");
-                        // printf("pos, %f, %f, %f\n", m_mat4HMDPose[0][2],
-                        // m_mat4HMDPose[1][2], m_mat4HMDPose[2][2]);
-                        //  m_resetPos = m_mat4HMDPose;
-                        hmd_pos = current_pos;
-                        m_bResetRotation = false;
-                        m_reset_rotation = glm::inverse(hmd_rot);
-                }
-        }
+		if (GetDigitalActionState(m_actionHideCubes) ||
+		    m_bResetRotation) {
+			printf("reset rotation!\n");
+			// printf("pos, %f, %f, %f\n", m_mat4HMDPose[0][2],
+			// m_mat4HMDPose[1][2], m_mat4HMDPose[2][2]);
+			//  m_resetPos = m_mat4HMDPose;
+			hmd_pos = current_pos;
+			m_bResetRotation = false;
+			m_reset_rotation = glm::inverse(hmd_rot);
+		}
+	}
 
-        if(!free_camera)
+	if(!free_camera)
 		hmd_pos = current_pos;
 
 	return bRet;
@@ -1742,67 +1742,67 @@ void CMainApplication::ProcessVREvent( const vr::VREvent_t & event )
 		}
 		break;
 
-        case vr::VREvent_OverlayClosed:
-                {
-                        bQuitSignal = true;
-                }
-                break;
+	case vr::VREvent_OverlayClosed:
+		{
+			bQuitSignal = true;
+		}
+		break;
 
-        case vr::VREvent_KeyboardCharInput:
-                if (overlay_xdo && src_window_id != None) {
-                        char text[sizeof(event.data.keyboard.cNewInput) + 1] = {0};
-                        memcpy(text, event.data.keyboard.cNewInput,
-                               sizeof(event.data.keyboard.cNewInput));
-                        xdo_enter_text_window(overlay_xdo, src_window_id, text,
-                                              12 * 1000);
-                }
-                break;
+	case vr::VREvent_KeyboardCharInput:
+		if (overlay_xdo && src_window_id != None) {
+			char text[sizeof(event.data.keyboard.cNewInput) + 1] = {0};
+			memcpy(text, event.data.keyboard.cNewInput,
+			       sizeof(event.data.keyboard.cNewInput));
+			xdo_enter_text_window(overlay_xdo, src_window_id, text,
+					      12 * 1000);
+		}
+		break;
 
-        case vr::VREvent_MouseMove:
-                if (overlay_xdo && src_window_id != None) {
-                        xdo_move_mouse_relative_to_window(
-                                overlay_xdo, src_window_id,
-                                event.data.mouse.x,
-                                event.data.mouse.y
-                        );
-                }
-                break;
+	case vr::VREvent_MouseMove:
+		if (overlay_xdo && src_window_id != None) {
+			xdo_move_mouse_relative_to_window(
+				overlay_xdo, src_window_id,
+				event.data.mouse.x,
+				event.data.mouse.y
+			);
+		}
+		break;
 
-        case vr::VREvent_MouseButtonUp:
-                if (overlay_xdo && src_window_id != None) {
-                        xdo_mouse_up(overlay_xdo, src_window_id,
-                                     event.data.mouse.button);
-                }
-                break;
+	case vr::VREvent_MouseButtonUp:
+		if (overlay_xdo && src_window_id != None) {
+			xdo_mouse_up(overlay_xdo, src_window_id,
+				     event.data.mouse.button);
+		}
+		break;
 
-        case vr::VREvent_MouseButtonDown:
-                if (overlay_xdo && (src_window_id != None || mpv_file)) {
-                        if (mpv_file)
-                                mpv.toggle_pause();
-                        else
-                                xdo_mouse_down(overlay_xdo, src_window_id,
-                                               event.data.mouse.button);
-                }
-                break;
+	case vr::VREvent_MouseButtonDown:
+		if (overlay_xdo && (src_window_id != None || mpv_file)) {
+			if (mpv_file)
+				mpv.toggle_pause();
+			else
+				xdo_mouse_down(overlay_xdo, src_window_id,
+					       event.data.mouse.button);
+		}
+		break;
 
-        case vr::VREvent_ScrollDiscrete:
-                if (overlay_xdo && (src_window_id != None || mpv_file)) {
-                        if (mpv_file)
-                        {
-                                if (event.data.scroll.ydelta > 0)
-                                        mpv.seek(-5.0);
-                                else if (event.data.scroll.ydelta < 0)
-                                        mpv.seek(5.0);
-                        }
-                        else
-                        {
-                                if (event.data.scroll.ydelta > 0)
-                                        xdo_click_window(overlay_xdo, src_window_id, 4);
-                                else if (event.data.scroll.ydelta < 0)
-                                        xdo_click_window(overlay_xdo, src_window_id, 5);
-                        }
-                }
-                break;
+	case vr::VREvent_ScrollDiscrete:
+		if (overlay_xdo && (src_window_id != None || mpv_file)) {
+			if (mpv_file)
+			{
+				if (event.data.scroll.ydelta > 0)
+					mpv.seek(-5.0);
+				else if (event.data.scroll.ydelta < 0)
+					mpv.seek(5.0);
+			}
+			else
+			{
+				if (event.data.scroll.ydelta > 0)
+					xdo_click_window(overlay_xdo, src_window_id, 4);
+				else if (event.data.scroll.ydelta < 0)
+					xdo_click_window(overlay_xdo, src_window_id, 5);
+			}
+		}
+		break;
 	}
 }
 
@@ -1820,61 +1820,61 @@ void CMainApplication::RenderFrame()
 	// for now as fast as possible
 	if ( m_pHMD )
 	{
-                if (overlay_mode) {
-                        GLuint texture_id = 0;
+		if (overlay_mode) {
+			GLuint texture_id = 0;
 
-                        if(mpv_file) {
-                                if(mpvBuffers != nullptr)
-                                {
-                                        texture_id = mpvBuffers->get_showTextureId();
-                                }
-                        }
-                        else if (overlay_buffers) {
-                                // OpenVR relies on a shared OpenGL context
-                                // which does not play well with the GLX
-                                // extension used to copy data from the
-                                // application, so data should be copied to a
-                                // separate texture.
+			if(mpv_file) {
+				if(mpvBuffers != nullptr)
+				{
+					texture_id = mpvBuffers->get_showTextureId();
+				}
+			}
+			else if (overlay_buffers) {
+				// OpenVR relies on a shared OpenGL context
+				// which does not play well with the GLX
+				// extension used to copy data from the
+				// application, so data should be copied to a
+				// separate texture.
 
-                                overlay_buffers->swap_buffer();
+				overlay_buffers->swap_buffer();
 
-                                GLuint ref_texture = window_texture_get_opengl_texture_id(&window_texture);
-                                texture_id = overlay_buffers->get_showTextureId();
+				GLuint ref_texture = window_texture_get_opengl_texture_id(&window_texture);
+				texture_id = overlay_buffers->get_showTextureId();
 
-                                glActiveTexture(GL_TEXTURE0);
-                                glBindTexture(GL_TEXTURE_2D, ref_texture);
-                                glBindVertexArray( m_unCompanionWindowVAO );
-                                glUseProgram(m_unOverlayProgramID);
-                                glUniform1i(glGetUniformLocation(m_unOverlayProgramID, "mytexture"), 0);
+				glActiveTexture(GL_TEXTURE0);
+				glBindTexture(GL_TEXTURE_2D, ref_texture);
+				glBindVertexArray( m_unCompanionWindowVAO );
+				glUseProgram(m_unOverlayProgramID);
+				glUniform1i(glGetUniformLocation(m_unOverlayProgramID, "mytexture"), 0);
 
-                                glBindFramebuffer(GL_DRAW_FRAMEBUFFER, overlay_buffers->get_renderFramebufferId());
+				glBindFramebuffer(GL_DRAW_FRAMEBUFFER, overlay_buffers->get_renderFramebufferId());
 
-                                glDisable(GL_DEPTH_TEST);
-                                glDrawBuffer(GL_COLOR_ATTACHMENT0);
-                                glViewport(0, 0, pixmap_texture_width, pixmap_texture_height);
+				glDisable(GL_DEPTH_TEST);
+				glDrawBuffer(GL_COLOR_ATTACHMENT0);
+				glViewport(0, 0, pixmap_texture_width, pixmap_texture_height);
 
-                                glDrawElements( GL_TRIANGLES, m_uiCompanionWindowIndexSize/2, GL_UNSIGNED_SHORT, 0 );
-                                glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
-                        }
+				glDrawElements( GL_TRIANGLES, m_uiCompanionWindowIndexSize/2, GL_UNSIGNED_SHORT, 0 );
+				glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
+			}
 
-                        vr::Texture_t overlay_tex = {(void*)(uintptr_t)texture_id,
-                                vr::TextureType_OpenGL, vr::ColorSpace_Gamma};
+			vr::Texture_t overlay_tex = {(void*)(uintptr_t)texture_id,
+				vr::TextureType_OpenGL, vr::ColorSpace_Gamma};
 
-                        // Flip OpenGL texture upside down
-                        vr::VRTextureBounds_t bounds = {0, 1, 1, 0};
+			// Flip OpenGL texture upside down
+			vr::VRTextureBounds_t bounds = {0, 1, 1, 0};
 
-                        vr::VROverlay()->SetOverlayTexture(overlay_handle, &overlay_tex);
-                        vr::VROverlay()->SetOverlayTextureBounds(overlay_handle, &bounds);
-                }
-                else {
-                        RenderStereoTargets();
-                        RenderCompanionWindow();
+			vr::VROverlay()->SetOverlayTexture(overlay_handle, &overlay_tex);
+			vr::VROverlay()->SetOverlayTextureBounds(overlay_handle, &bounds);
+		}
+		else {
+			RenderStereoTargets();
+			RenderCompanionWindow();
 
-                        vr::Texture_t leftEyeTexture = {(void*)(uintptr_t)leftEyeDesc.m_nResolveTextureId, vr::TextureType_OpenGL, vr::ColorSpace_Gamma };
-                        vr::VRCompositor()->Submit(vr::Eye_Left, &leftEyeTexture );
-                        vr::Texture_t rightEyeTexture = {(void*)(uintptr_t)rightEyeDesc.m_nResolveTextureId, vr::TextureType_OpenGL, vr::ColorSpace_Gamma };
-                        vr::VRCompositor()->Submit(vr::Eye_Right, &rightEyeTexture );
-                }
+			vr::Texture_t leftEyeTexture = {(void*)(uintptr_t)leftEyeDesc.m_nResolveTextureId, vr::TextureType_OpenGL, vr::ColorSpace_Gamma };
+			vr::VRCompositor()->Submit(vr::Eye_Left, &leftEyeTexture );
+			vr::Texture_t rightEyeTexture = {(void*)(uintptr_t)rightEyeDesc.m_nResolveTextureId, vr::TextureType_OpenGL, vr::ColorSpace_Gamma };
+			vr::VRCompositor()->Submit(vr::Eye_Right, &rightEyeTexture );
+		}
 	}
 
 	if ( m_bVblank && m_bGlFinishHack )
@@ -1920,10 +1920,10 @@ void CMainApplication::RenderFrame()
 		dprintf( "PoseCount:%d(%s) Controllers:%d\n", m_iValidPoseCount, m_strPoseClasses.c_str(), m_iTrackedControllerCount );
 	}
 
-        if (!overlay_mode)
-                UpdateHMDMatrixPose();
-        else
-                vr::VROverlay()->WaitFrameSync(20);
+	if (!overlay_mode)
+		UpdateHMDMatrixPose();
+	else
+		vr::VROverlay()->WaitFrameSync(20);
 }
 
 //-----------------------------------------------------------------------------
@@ -2154,7 +2154,7 @@ bool CMainApplication::CreateAllShaders()
 		"}\n"
 		);
 
-        m_unOverlayProgramID = CompileGLShader(
+	m_unOverlayProgramID = CompileGLShader(
 		"OverlayProgram",
 
 		// vertex shader
@@ -2182,7 +2182,7 @@ bool CMainApplication::CreateAllShaders()
 
 	return m_unSceneProgramID != 0 
 		&& m_unCompanionWindowProgramID != 0 &&
-                m_unOverlayProgramID != 0;
+		m_unOverlayProgramID != 0;
 }
 
 bool CMainApplication::SetCursorFromX11CursorImage(XFixesCursorImage *x11_cursor_image) {
