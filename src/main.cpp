@@ -1181,6 +1181,9 @@ bool CMainApplication::BInitCompositor()
 	return true;
 }
 
+//-----------------------------------------------------------------------------
+// Purpose: Create a VR overlay in which the window/video will be rendered.
+//-----------------------------------------------------------------------------
 bool CMainApplication::BInitOverlay()
 {
 	if ( !vr::VROverlay() )
