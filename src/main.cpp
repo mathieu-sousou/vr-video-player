@@ -1776,18 +1776,31 @@ void CMainApplication::ProcessVREvent( const vr::VREvent_t & event )
                 break;
 
         case vr::VREvent_MouseButtonDown:
-                if (overlay_xdo && src_window_id != None) {
-                        xdo_mouse_down(overlay_xdo, src_window_id,
-                                       event.data.mouse.button);
+                if (overlay_xdo && (src_window_id != None || mpv_file)) {
+                        if (mpv_file)
+                                mpv.toggle_pause();
+                        else
+                                xdo_mouse_down(overlay_xdo, src_window_id,
+                                               event.data.mouse.button);
                 }
                 break;
 
         case vr::VREvent_ScrollDiscrete:
-                if (overlay_xdo && src_window_id != None) {
-                        if (event.data.scroll.ydelta > 0)
-                                xdo_click_window(overlay_xdo, src_window_id, 4);
-                        else if (event.data.scroll.ydelta < 0)
-                                xdo_click_window(overlay_xdo, src_window_id, 5);
+                if (overlay_xdo && (src_window_id != None || mpv_file)) {
+                        if (mpv_file)
+                        {
+                                if (event.data.scroll.ydelta > 0)
+                                        mpv.seek(-5.0);
+                                else if (event.data.scroll.ydelta < 0)
+                                        mpv.seek(5.0);
+                        }
+                        else
+                        {
+                                if (event.data.scroll.ydelta > 0)
+                                        xdo_click_window(overlay_xdo, src_window_id, 4);
+                                else if (event.data.scroll.ydelta < 0)
+                                        xdo_click_window(overlay_xdo, src_window_id, 5);
+                        }
                 }
                 break;
 	}
