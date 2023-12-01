@@ -220,6 +220,8 @@ public:
 	void RenderCompanionWindow();
 	void RenderScene( vr::Hmd_Eye nEye );
 
+	void UpdateOverlayTitle();
+
 	glm::mat4 GetHMDMatrixProjectionEye( vr::Hmd_Eye nEye );
 	glm::mat4 GetHMDMatrixPoseEye( vr::Hmd_Eye nEye );
 	glm::mat4 GetCurrentViewProjectionMatrix( vr::Hmd_Eye nEye );
@@ -1502,22 +1504,7 @@ bool CMainApplication::HandleInput()
 			vr::HmdVector2_t scale = {(float)window_width, (float)window_height};
 			vr::VROverlay()->SetOverlayMouseScale(overlay_handle, &scale);
 
-			unsigned char *name = nullptr;
-			int name_len = 0;
-			int name_type = 0;
-			xdo_get_window_name(overlay_xdo, src_window_id,
-					    &name, &name_len, &name_type);
-
-			if (name && name_len > 0) {
-				std::string name_str;
-				name_str.resize(name_len);
-				for (int i = 0; i < name_len; i++)
-				  name_str[i] = name[i];
-
-				vr::VROverlay()->SetOverlayName(overlay_handle, name_str.c_str());
-			}
-
-			XFree(name);
+			UpdateOverlayTitle();
 
 			unsigned long offset = 0;
 			unsigned long best_offset = (unsigned long)-1;
@@ -3004,6 +2991,27 @@ void CMainApplication::RenderCompanionWindow()
 	glUseProgram( 0 );
 }
 
+
+//-----------------------------------------------------------------------------
+// Purpose: Copy the title of the source X11 window as the overlay title
+//-----------------------------------------------------------------------------
+void CMainApplication::UpdateOverlayTitle() {
+	unsigned char *name = nullptr;
+	int name_len = 0;
+	int name_type = 0;
+	xdo_get_window_name(overlay_xdo, src_window_id,
+				&name, &name_len, &name_type);
+
+	if (!name) return;
+
+	std::string name_str;
+	name_str.resize(name_len);
+	for (int i = 0; i < name_len; i++)
+		name_str[i] = name[i];
+
+	vr::VROverlay()->SetOverlayName(overlay_handle, name_str.c_str());
+	XFree(name);
+}
 
 //-----------------------------------------------------------------------------
 // Purpose: Gets a Matrix Projection Eye with respect to nEye.
