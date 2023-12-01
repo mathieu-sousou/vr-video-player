@@ -1187,7 +1187,7 @@ bool CMainApplication::BInitOverlay()
 
         vr::VROverlay()->CreateDashboardOverlay(
                 overlay_key,
-                "vr-video-player",
+                mpv_file ? mpv_file : "vr-video-player",
                 &overlay_handle,
                 &thumbnail_handle
         );
@@ -1478,6 +1478,23 @@ bool CMainApplication::HandleInput()
                 if (overlay_mode) {
                         vr::HmdVector2_t scale = {(float)window_width, (float)window_height};
                         vr::VROverlay()->SetOverlayMouseScale(overlay_handle, &scale);
+
+                        unsigned char *name = nullptr;
+                        int name_len = 0;
+                        int name_type = 0;
+                        xdo_get_window_name(overlay_xdo, src_window_id,
+                                            &name, &name_len, &name_type);
+
+                        if (name && name_len > 0) {
+                                std::string name_str;
+                                name_str.resize(name_len);
+                                for (int i = 0; i < name_len; i++)
+                                  name_str[i] = name[i];
+
+                                vr::VROverlay()->SetOverlayName(overlay_handle, name_str.c_str());
+                        }
+
+                        XFree(name);
                 }
 
 		if(focused_window_changed) {
