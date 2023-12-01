@@ -426,6 +426,7 @@ private: // X compositor
 	xdo_t *overlay_xdo = nullptr;
 	Atom overlay_icon_atom;
 	bool overlay_mouse_controls = true;
+	GLint m_unOverlayTextureLoc;
 };
 
 
@@ -2050,6 +2051,8 @@ bool CMainApplication::CreateAllShaders()
 		"}\n"
 		);
 
+	m_unOverlayTextureLoc = glGetUniformLocation(m_unOverlayProgramID, "mytexture");
+
 	return m_unSceneProgramID != 0 
 		&& m_unCompanionWindowProgramID != 0 &&
 		m_unOverlayProgramID != 0;
@@ -2897,7 +2900,7 @@ void CMainApplication::RenderOverlay() {
 		glBindTexture(GL_TEXTURE_2D, ref_texture);
 		glBindVertexArray( m_unCompanionWindowVAO );
 		glUseProgram(m_unOverlayProgramID);
-		glUniform1i(glGetUniformLocation(m_unOverlayProgramID, "mytexture"), 0);
+		glUniform1i(m_unOverlayTextureLoc, 0);
 
 		glBindFramebuffer(GL_DRAW_FRAMEBUFFER, overlay_buffers->get_renderFramebufferId());
 
