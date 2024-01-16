@@ -1574,9 +1574,8 @@ bool CMainApplication::HandleInput()
 	}
 
 	if (overlay_mode) {
-		vr::VREvent_t vrEvent;
 		while( vr::VROverlay()->PollNextOverlayEvent(
-				overlay_handle, &vrEvent, sizeof( vrEvent ) ) ) {
+				overlay_handle, &event, sizeof( event ) ) ) {
 			ProcessVREvent( event );
 		}
 	}
