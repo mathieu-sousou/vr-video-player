@@ -1,6 +1,6 @@
 #!/bin/sh -e
 
-dependencies="glm glew sdl2 openvr x11 xcomposite xfixes mpv libxdo"
+dependencies="glew sdl2 openvr x11 xcomposite xfixes mpv libxdo"
 includes=$(pkg-config --cflags $dependencies)
 libs="$(pkg-config --libs $dependencies) -lm -pthread"
 gcc -c src/window_texture.c -O2 -DNDEBUG $includes
