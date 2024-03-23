@@ -72,16 +72,12 @@
 #define _countof(x) (sizeof(x)/sizeof((x)[0]))
 #endif
 
-// Not in public headers yet.
+// Not in public headers in older version of openvr.
 namespace vr
 {
-	const VROverlayFlags VROverlayFlags_EnableControlBar = (VROverlayFlags)(1 << 23);
-	const VROverlayFlags VROverlayFlags_EnableControlBarKeyboard = (VROverlayFlags)(1 << 24);
-	const VROverlayFlags VROverlayFlags_EnableControlBarClose = (VROverlayFlags)(1 << 25);
-	const VROverlayFlags VROverlayFlags_EnableControlBarSteamUI = (VROverlayFlags)(1 << 26);
-
-	const EVRButtonId k_EButton_Steam = (EVRButtonId)(50);
-	const EVRButtonId k_EButton_QAM = (EVRButtonId)(51);
+	const VROverlayFlags vrvid_VROverlayFlags_EnableControlBar = (VROverlayFlags)(1 << 23);
+	const VROverlayFlags vrvid_VROverlayFlags_EnableControlBarKeyboard = (VROverlayFlags)(1 << 24);
+	const VROverlayFlags vrvid_VROverlayFlags_EnableControlBarClose = (VROverlayFlags)(1 << 25);
 }
 
 static bool g_bPrintf = true;
@@ -1222,9 +1218,9 @@ bool CMainApplication::BInitOverlay()
 		vr::VROverlay()->SetOverlayInputMethod(overlay_handle, vr::VROverlayInputMethod_None);
 
 	vr::VROverlay()->SetOverlayFlag(overlay_handle, vr::VROverlayFlags_IgnoreTextureAlpha, true);
-	vr::VROverlay()->SetOverlayFlag(overlay_handle, vr::VROverlayFlags_EnableControlBar, true);
-	vr::VROverlay()->SetOverlayFlag(overlay_handle, vr::VROverlayFlags_EnableControlBarKeyboard, true);
-	vr::VROverlay()->SetOverlayFlag(overlay_handle, vr::VROverlayFlags_EnableControlBarClose, true);
+	vr::VROverlay()->SetOverlayFlag(overlay_handle, vr::vrvid_VROverlayFlags_EnableControlBar, true);
+	vr::VROverlay()->SetOverlayFlag(overlay_handle, vr::vrvid_VROverlayFlags_EnableControlBarKeyboard, true);
+	vr::VROverlay()->SetOverlayFlag(overlay_handle, vr::vrvid_VROverlayFlags_EnableControlBarClose, true);
 	vr::VROverlay()->SetOverlayFlag(overlay_handle, vr::VROverlayFlags_WantsModalBehavior, false);
 	vr::VROverlay()->SetOverlayFlag(overlay_handle, vr::VROverlayFlags_SendVRDiscreteScrollEvents, true);
 	vr::VROverlay()->SetOverlayFlag(overlay_handle, vr::VROverlayFlags_VisibleInDashboard, true);
