@@ -947,6 +947,8 @@ bool CMainApplication::BInit()
 	// Needed for mpv
 	SDL_SetHint(SDL_HINT_NO_SIGNAL_HANDLERS, "no");
 
+	SDL_SetHint(SDL_HINT_VIDEODRIVER, "x11");
+
 	m_pCompanionWindow = SDL_CreateWindow( "vr-video-player", nWindowPosX, nWindowPosY, m_nCompanionWindowWidth, m_nCompanionWindowHeight, unWindowFlags );
 	if (m_pCompanionWindow == NULL)
 	{
