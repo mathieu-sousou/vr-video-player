@@ -513,7 +513,7 @@ void dprintf( const char *fmt, ... )
 }
 
 static void usage() {
-	fprintf(stderr, "usage: vr-video-player [--sphere|--sphere360|--flat|--plane] [--left-right|--right-left] [--stretch|--no-stretch] [--zoom zoom-level] [--cursor-scale scale] [--cursor-wrap|--no-cursor-wrap] [--follow-focused|--video video|<window_id>] [--use-system-mpv-config] [--mpv-profile <profile>] [--free-camera] [--reduce-flicker] [--overlay] [--overlay-key <key>] [--overlay-mouse|--no-overlay-mouse] [--overlay-width <width>]\n");
+	fprintf(stderr, "usage: vr-video-player [--sphere|--sphere360|--flat|--plane] [--left-right|--right-left] [--stretch|--no-stretch] [--zoom zoom-level] [--cursor-scale scale] [--cursor-wrap|--no-cursor-wrap] [--follow-focused|--video video|<window_id>] [--use-system-mpv-config] [--mpv-profile <profile>] [--free-camera] [--no-free-camera] [--reduce-flicker] [--overlay] [--overlay-key <key>] [--overlay-mouse|--no-overlay-mouse] [--overlay-width <width>]\n");
     fprintf(stderr, "\n");
 	fprintf(stderr, "OPTIONS\n");
     fprintf(stderr, "  --sphere                  View the window as a stereoscopic 180 degrees screen (half sphere). The view will be attached to your head in vr. This is recommended for 180 degrees videos. This is the default value\n");
@@ -529,7 +529,8 @@ static void usage() {
     fprintf(stderr, "  --cursor-wrap             If this option is set, then the cursor position in the vr view will wrap around when it reached the center of the window (i.e when it reaches the edge of one side of the stereoscopic view). This option is only valid for stereoscopic view (flat and sphere modes)\n");
     fprintf(stderr, "  --no-cursor-wrap          If this option is set, then the cursor position in the vr view will match the the real cursor position inside the window\n");
 	fprintf(stderr, "  --reduce-flicker          A hack to reduce flickering in low resolution text when the headset is not moving by moving the window around quickly by a few pixels\n");
-	fprintf(stderr, "  --free-camera             If this option is set, then the camera wont follow your position\n");
+	fprintf(stderr, "  --free-camera             If this option is set, then the camera wont follow your position. This option is enabled unless --sphere or --sphere360 options are used\n");
+	fprintf(stderr, "  --no-free-camera          If this option is set, then the camera will follow your position. This option is enabled when --sphere or --sphere360 options are used\n");
     fprintf(stderr, "  --follow-focused          If this option is set, then the selected window will be the focused window. vr-video-player will automatically update when the focused window changes. Either this option, --video or window_id should be used\n");
 	fprintf(stderr, "  --video <video>           Select the video to play (using mpv). Either this option, --follow-focused or window_id should be used\n");
 	fprintf(stderr, "  --use-system-mpv-config   Use system (~/.config/mpv/mpv.conf) mpv config. Disabled by default\n");
@@ -615,6 +616,7 @@ CMainApplication::CMainApplication( int argc, char *argv[] )
 	bool zoom_set = false;
 	bool cursor_scale_set = false;
 	bool cursor_wrap_set = false;
+	bool free_camera_set = false;
 
 	memset(&window_texture, 0, sizeof(window_texture));
 
@@ -719,6 +721,10 @@ CMainApplication::CMainApplication( int argc, char *argv[] )
 			++i;
 		} else if(strcmp(argv[i], "--free-camera") == 0) {
 			free_camera = true;
+			free_camera_set = true;
+		} else if(strcmp(argv[i], "--no-free-camera") == 0) {
+			free_camera = false;
+			free_camera_set = true;
 		} else if(strcmp(argv[i], "--reduce-flicker") == 0) {
 			reduce_flicker = true;
 		} else if(strcmp(argv[i], "--overlay") == 0) {
@@ -756,6 +762,14 @@ CMainApplication::CMainApplication( int argc, char *argv[] )
 	if(src_window_id == None && !follow_focused && !mpv_file) {
 		fprintf(stderr, "Missing required window_id, --follow-focused or --video option\n");
 		usage();
+	}
+
+	if(!free_camera_set) {
+		if(overlay_mode || projection_mode == ProjectionMode::SPHERE || projection_mode == ProjectionMode::SPHERE360) {
+			free_camera = false;
+		} else {
+			free_camera = true;
+		}
 	}
 
 	if(!zoom_set && projection_mode != ProjectionMode::SPHERE) {

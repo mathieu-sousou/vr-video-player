@@ -9,3 +9,4 @@ Fix sphere360... AAAAAA.
 Use egl instead of glx for xcomposite window capture because nvidia glx has a limitation where only 1 pixmap can be created for a window which means that with some compositors (gnome for example with CSD or picom in GLX mode) it will fail to create a texture and the captured texture will instead be black. Nvidia with egl doesn't have this limitation.
 Add option to capture monitors. This would be useful specifically with the --overlay option.
 Allow selecting window/monitor in overlay.
+Use lanczos resampling shader for improved texture quality.
