@@ -49,7 +49,9 @@
 #include <X11/Xlib.h>
 #include <X11/extensions/Xfixes.h>
 
+extern "C" {
 #include <xdo.h>
+}
 
 #include <stdio.h>
 #include <string>
@@ -1231,7 +1233,8 @@ bool CMainApplication::BInitOverlay()
 	else
 		vr::VROverlay()->SetOverlayInputMethod(overlay_handle, vr::VROverlayInputMethod_None);
 
-	vr::VROverlay()->SetOverlayFlag(overlay_handle, vr::VROverlayFlags_IgnoreTextureAlpha, true);
+	// sousou tofix
+	//vr::VROverlay()->SetOverlayFlag(overlay_handle, vr::VROverlayFlags_IgnoreTextureAlpha, true);
 	vr::VROverlay()->SetOverlayFlag(overlay_handle, vr::vrvid_VROverlayFlags_EnableControlBar, true);
 	vr::VROverlay()->SetOverlayFlag(overlay_handle, vr::vrvid_VROverlayFlags_EnableControlBarKeyboard, true);
 	vr::VROverlay()->SetOverlayFlag(overlay_handle, vr::vrvid_VROverlayFlags_EnableControlBarClose, true);
@@ -1678,11 +1681,12 @@ void CMainApplication::ProcessVREvent( const vr::VREvent_t & event )
 		}
 		break;
 
-	case vr::VREvent_OverlayClosed:
-		{
-			bQuitSignal = true;
-		}
-		break;
+// sousou tofix
+// 	case vr::VREvent_OverlayClosed:
+// 		{
+// 			bQuitSignal = true;
+// 		}
+// 		break;
 
 	case vr::VREvent_KeyboardCharInput:
 		if (overlay_xdo && src_window_id != None) {
@@ -1813,10 +1817,11 @@ void CMainApplication::RenderFrame()
 		dprintf( "PoseCount:%d(%s) Controllers:%d\n", m_iValidPoseCount, m_strPoseClasses.c_str(), m_iTrackedControllerCount );
 	}
 
-	if (!overlay_mode)
-		UpdateHMDMatrixPose();
-	else
-		vr::VROverlay()->WaitFrameSync(20);
+// sousou tofix
+// 	if (!overlay_mode)
+// 		UpdateHMDMatrixPose();
+// 	else
+// 		vr::VROverlay()->WaitFrameSync(20);
 }
 
 //-----------------------------------------------------------------------------
